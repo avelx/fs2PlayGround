@@ -21,3 +21,5 @@ libraryDependencies += "co.fs2" %% "fs2-reactive-streams" % "3.12.0"
 libraryDependencies += "co.fs2" %% "fs2-scodec" % "3.12.0"
 
 libraryDependencies += "com.github.zainab-ali" %% "aquascape" % "0.3.0"
+
+libraryDependencies += "com.lihaoyi" %% "os-lib" % "0.11.3"
