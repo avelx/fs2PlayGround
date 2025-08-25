@@ -23,6 +23,13 @@ object Runner extends IOApp.Simple {
 
   val zipStream = helloWords.zip(goodbyeWords).zip(goodbyeWords2)
 
+  val processedHelloWorld = helloWords
+    .flatMap(helloWord =>
+      goodbyeWords.map(goodbyeWord => s"$helloWord-$goodbyeWord")
+    )
+    .compile
+    .toList
+
   def mostCommonInStream(ids: Stream[Pure, String]): String = {
     val initialCounts: Map[String, Int] = Map.empty
     val finalCounts = ids
@@ -45,6 +52,8 @@ object Runner extends IOApp.Simple {
   override def run: IO[Unit] = {
     for {
       _ <- IO.println("Data test ...")
+      res = processedHelloWorld
+      _ <- IO.println(res)
       //res = mostCommonInStream(oneAndFortyTwo)
       //_ <- IO.println(s"Here is result: ${res}")
       //_ = infiniteStream.map(x => { println(x); x} ).compile.drain
