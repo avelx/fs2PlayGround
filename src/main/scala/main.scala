@@ -1,6 +1,11 @@
 import cats.Id
+import cats.effect.std.Queue
 import cats.effect.{IO, IOApp}
 import fs2.*
+
+import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
+import scala.util.Random
 
 object Runner extends IOApp.Simple {
 
@@ -49,18 +54,67 @@ object Runner extends IOApp.Simple {
 
   val infiniteStream = Stream(1).repeat
 
+  def inc(): Future[Int] = {
+    var counter: Int = 0
+    def nextValue: Future[Int] = {
+      counter += 1
+      Future.successful { counter}
+    }
+    nextValue
+  }
+
+  private def queueRefresh(queue: Queue[IO, Int]): IO[Unit] = {
+    for {
+      _ <- IO.cede
+      _ <- IO.sleep(2.seconds)
+      _ <- queue.offer( Random.nextInt(100) )
+      _ <- queueRefresh(queue)
+    } yield ()
+  }
+
   override def run: IO[Unit] = {
     for {
-      _ <- IO.println("Data test ...")
-      res = processedHelloWorld
-      _ <- IO.println(res)
-      //res = mostCommonInStream(oneAndFortyTwo)
-      //_ <- IO.println(s"Here is result: ${res}")
-      //_ = infiniteStream.map(x => { println(x); x} ).compile.drain
-      //_ = numbersStream.compile.drain
-      //helloWords_ = emptyAndInfinite.compile.count
-      //_ = zipStream.map(x => { println(x); x }).compile.drain
+      queue <- Queue.unbounded[IO, Int]
+      fiber = Stream.fromQueueUnterminated(queue)
+        .debounce(1.seconds)
+        .evalMap(i =>
+          for {
+            _ <- IO.println(s"start $i")
+            // Sleep long enough that some debounce periods would be missed
+            _ <- IO.sleep(1.seconds)
+            _ <- IO.println(s"end $i")
+          } yield ()
+        )
+//        .take(2)
+        .compile
+        .drain
+//        .start
+//      _ <- queue.offer(1)
+//      _ <- queue.offer(2)
+      // Sleep 5 seconds so #2 is actively processing
+//      _ <- IO.sleep(5.seconds)
+//      _ <- queue.offer(3)
+      refresh = queueRefresh(queue)
+      _ <- IO.racePair(refresh, fiber)
     } yield ()
+//    for {
+//      _ <- IO.println("Data test ...")
+//      res = Stream.eval( {
+//      val f = IO(inc())
+//        IO.fromFuture(f)
+//      }).covary[IO]
+//        .repeatN(5).compile.toList
+//      x <- res
+//      _ <- IO.println(x)
+//      //res = processedHelloWorld
+//      //_ <- IO.println(res)
+//      //res = mostCommonInStream(oneAndFortyTwo)
+//      //_ <- IO.println(s"Here is result: ${res}")
+//      //_ = infiniteStream.map(x => { println(x); x} ).compile.drain
+//      //_ = numbersStream.compile.drain
+//      //helloWords_ = emptyAndInfinite.compile.count
+//      //_ = zipStream.map(x => { println(x); x }).compile.drain
+//    } yield ()
   }
 
 }
