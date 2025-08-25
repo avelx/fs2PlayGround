@@ -53,9 +53,12 @@ object GoogleStockApp extends IOApp.Simple {
           case Some(record) =>
             (record.date.toLocalDate.getYear.toString, record.toString)
         }
-        .map{ rec =>
-          val path: os.Path = os.root / "Users" / "pavel" / "devcore" / "Cats-Effects" / "fs2PlayGround" / "data" / s"${rec._1}.txt"
-          os.write.append(path, s"${rec._2}\n")
+        .covary[IO] // Set maxConcurrency to 5
+        .parEvalMap(5) { rec =>
+          IO.delay {
+            val path: os.Path = os.root / "Users" / "pavel" / "devcore" / "Cats-Effects" / "fs2PlayGround" / "data" / s"${rec._1}.txt"
+            os.write.append(path, s"${rec._2}\n")
+          }
         }
         .compile
         .drain
