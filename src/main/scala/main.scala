@@ -1,6 +1,6 @@
 import cats.Id
 import cats.effect.std.Queue
-import cats.effect.{IO, IOApp}
+import cats.effect.{IO, IOApp, Sync}
 import fs2.*
 
 import scala.concurrent.Future
@@ -66,23 +66,26 @@ object Runner extends IOApp.Simple {
   private def queueRefresh(queue: Queue[IO, Int]): IO[Unit] = {
     for {
       _ <- IO.cede
-      _ <- IO.sleep(2.seconds)
-      _ <- queue.offer( Random.nextInt(100) )
+      _ <- IO.sleep(300.millis)
+      _ <- queue.tryOffer( Random.nextInt(100) )
       _ <- queueRefresh(queue)
+      _ <- IO.cede
     } yield ()
   }
 
   override def run: IO[Unit] = {
     for {
-      queue <- Queue.unbounded[IO, Int]
+      queue <- Queue.bounded[IO, Int](50)
       fiber = Stream.fromQueueUnterminated(queue)
-        .debounce(1.seconds)
+        //.debounce(1.seconds)
         .evalMap(i =>
           for {
             _ <- IO.println(s"start $i")
             // Sleep long enough that some debounce periods would be missed
-            _ <- IO.sleep(1.seconds)
+            _ <- IO.sleep(Random.nextInt(1000).millis)
             _ <- IO.println(s"end $i")
+            size <- queue.size
+            _ <- IO.println(s"QueueSize: ${size}")
           } yield ()
         )
 //        .take(2)
