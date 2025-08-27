@@ -101,7 +101,6 @@ object GoogleStockApp extends IOApp.Simple {
       } yield ()
     }
 
-    //runInsertFilm(appConfig, insertFilm _)
 
     def insertStock(stock: StockPrice): IO[Unit] = {
       for {
@@ -112,6 +111,10 @@ object GoogleStockApp extends IOApp.Simple {
           }
         }
       } yield ()
+    }
+
+    def createPostgresResource(appConf: AppConfig): Resource[IO, AppResources[IO]] = {
+      AppResources.make[IO](appConf)
     }
 
     for {
@@ -136,20 +139,6 @@ object GoogleStockApp extends IOApp.Simple {
         .drain
     } yield ()
 
-
   }
-
-
-  //def asStream(in: Record): fs2.Stream[IO, Record] = ???
-
-  def createPostgresResource(appConf: AppConfig): Resource[IO, AppResources[IO]] = {
-    AppResources.make[IO](appConf)
-  }
-
-  //  val tapResource = Resource.make(
-  //    IO.println("Opening tap.").as(Tap("Hot"))
-  //  )(_
-  //  => IO.println("Closing tap."))
-
 
 }
