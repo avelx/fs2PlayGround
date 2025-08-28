@@ -11,7 +11,7 @@ object WikipediaApp extends IOApp.Simple {
 
   implicit def logger[F[_] : Sync]: Logger[F] = Slf4jLogger.getLogger[F]
 
-  val path: String = "file:///Users/pavel/devcore/Cats-Effects/fs2PlayGround/data/wiki/a.parquet"
+  val path: String = "file:///Users/pavel/devcore/Cats-Effects/fs2PlayGround/data/wiki/"
 
   /*
     Schema inferred from Spark
