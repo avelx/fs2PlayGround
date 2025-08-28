@@ -28,7 +28,7 @@ object GoogleStockApp extends IOApp.Simple {
             }
             .covary[IO]
             .parEvalMap(maxParallelEvals) { rec =>
-              IO.blocking( insertStock(session)(rec.toStockRec)) *>
+              IO.blocking( insertStock(session)(rec.toStockRec) ) *>
                 IO.blocking { // Insert into PostGres and split into few files at the same time
                   val path: os.Path = os.root / "Users" / "pavel" / "devcore" / "Cats-Effects" / "fs2PlayGround" / "data" / s"${rec.date.getYear}.txt"
                   os.write.append(path, s"${rec.toString}\n")
