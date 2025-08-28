@@ -1,17 +1,30 @@
+import cats.effect.IO.asyncForIO
 import cats.effect.kernel.Sync
+import cats.effect.std.Queue
 import cats.effect.{IO, IOApp}
-import com.github.mjakubowski84.parquet4s.{ParquetReader, Path}
 import com.github.mjakubowski84.parquet4s.parquet.fromParquet
+import com.github.mjakubowski84.parquet4s.{ParquetReader, Path}
+import org.apache.hadoop.conf.Configuration
 import org.typelevel.log4cats.Logger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
-import org.apache.hadoop.conf.Configuration
-
 
 object WikipediaApp extends IOApp.Simple {
 
   implicit def logger[F[_] : Sync]: Logger[F] = Slf4jLogger.getLogger[F]
 
-  val path: String = "file:///Users/pavel/devcore/Cats-Effects/fs2PlayGround/data/wiki/"
+  val isProd : Boolean = false
+
+  private def savePath(name: String): os.Path = if (isProd) {
+    os.root / "home" / "pavel" / "data" / s"wiki_${name}.txt"
+  } else {
+    os.root / "Users" / "pavel" / "devcore" / "Cats-Effects" / "fs2PlayGround" / "data" / "wiki" / s"${name}.txt"
+  }
+
+  private val dataSourcePath: os.Path = if (isProd) {
+    os.pwd / "data" / "wikipedia"
+  } else {
+    os.pwd / "data" / "wiki"
+  }
 
   /*
     Schema inferred from Spark
@@ -25,32 +38,48 @@ object WikipediaApp extends IOApp.Simple {
   case class Categories(element: String)
 
   case class Line(id: String,
-                  title:String,
+                  title: String,
                   text: String)
 
   val conf: Configuration = Configuration()
-//  conf.set("spark.sql.parquet.enableVectorizedReader", "true")
-//  conf.set("spark.sql.parquet.enableNestedColumnVectorizedReader", "true")
+  //  conf.set("spark.sql.parquet.enableVectorizedReader", "true")
+  //  conf.set("spark.sql.parquet.enableNestedColumnVectorizedReader", "true")
 
   override def run: IO[Unit] = {
 
-    val readAllStream = fromParquet[IO]
-      .as[Line]
-      .options(ParquetReader.Options(hadoopConf = conf))
-      .parallelism(n = 4)
-      .read(Path(path))
+    def readAllStream(queue: Queue[IO, Option[String]]): fs2.Stream[IO, Long] = {
+      fs2.Stream.fromQueueNoneTerminated(queue)
+        //.covary[IO]
+        .map(x => {
+          println(s"Extract: $x")
+          x
+        })
+        .evalMap { path =>
+          val name = path.split('\\').last
+          fromParquet[IO]
+            .as[Line]
+            .options(ParquetReader.Options(hadoopConf = conf))
+            .parallelism(n = 20)
+            .read(Path(path))
+            .parEvalMap(10) { rec =>
+              IO.blocking {
+                val path: os.Path = savePath(name)
+                os.write.append(path, s"${rec.toString}\n")
+              }
+            }
+            .compile.count
+        }
+    }
 
     for {
-      _ <- readAllStream
-        .parEvalMap(20){rec =>
-          IO.blocking {
-            val path: os.Path = os.root / "Users" / "pavel" / "devcore" / "Cats-Effects" / "fs2PlayGround" / "data" / "wiki" / "a.txt"
-            os.write.append(path, s"${rec.toString}\n")
-          }
-        }
-        .compile
-        .drain
+      queue <- Queue.unbounded[IO, Option[String]]
+      s = readAllStream(queue)
+      _ <-  os.list(dataSourcePath).toList.map(x => x.toIO.getPath)
+            .map(Some(_)).map(x => queue.tryOffer(x)).sequence
+      _ <- s.compile.toList
     } yield ()
+
+
   }
 
 }
