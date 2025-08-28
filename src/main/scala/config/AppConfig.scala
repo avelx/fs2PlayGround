@@ -10,3 +10,15 @@ case class PostgreSQLConfig(
                              database: String,
                              max: Int
                            )
+
+object PostgreSQLConfig {
+  def default: PostgreSQLConfig =
+    PostgreSQLConfig(
+      host = "localhost",
+      user = "postgres",
+      password = "my-password",
+      database = "store",
+      port = 5432,
+      max = 5
+    )
+}
