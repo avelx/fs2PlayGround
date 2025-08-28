@@ -1,3 +1,4 @@
+import GoogleStockApp.appConfig
 import cats.effect.*
 import cats.effect.kernel.Sync
 import config.{AppConfig, PostgreSQLConfig}
@@ -21,7 +22,7 @@ object GoogleStockApp extends IOApp.Simple {
     val pairs = List[(String, String)](("3", "Bob"))
     val insertPairs = insertFilm(pairs)
     for {
-      _ <- createPostgresResource(appConfig).use { res =>
+      _ <- AppResources.make[IO](appConfig).use { res =>
         res.postgres.use { session =>
           session.prepare(insertPairs).flatMap { cmd =>
             cmd.execute(pairs)
@@ -33,7 +34,7 @@ object GoogleStockApp extends IOApp.Simple {
 
   def insertStock(stock: StockPrice): IO[Unit] = {
     for {
-      _ <- createPostgresResource(appConfig).use { res =>
+      _ <- AppResources.make[IO](appConfig).use { res =>
         res.postgres.use { session =>
           session.prepare(insertPriceRecord)
             .flatMap(_.execute(stock)).void
@@ -42,12 +43,9 @@ object GoogleStockApp extends IOApp.Simple {
     } yield ()
   }
 
-  def createPostgresResource(appConf: AppConfig): Resource[IO, AppResources[IO]] = {
-    AppResources.make[IO](appConf)
-  }
 
   override def run: IO[Unit] = {
-    
+
     for {
       _ <- Files[IO].readUtf8Lines(Path("data/GoogleStockPrices.csv"))
         .tail // Skip head of the file where we have a schema definition
