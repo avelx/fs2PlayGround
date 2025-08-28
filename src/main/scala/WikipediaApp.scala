@@ -21,6 +21,7 @@ object WikipediaApp extends IOApp.Simple {
     |-- categories: array (nullable = true)
     |    |-- element: string (containsNull = true)
    */
+  // TODO: re-instate categories
   case class Categories(element: String)
 
   case class Line(id: String,
@@ -28,8 +29,8 @@ object WikipediaApp extends IOApp.Simple {
                   text: String)
 
   val conf: Configuration = Configuration()
-  conf.set("spark.sql.parquet.enableVectorizedReader", "true")
-  conf.set("spark.sql.parquet.enableNestedColumnVectorizedReader", "true")
+//  conf.set("spark.sql.parquet.enableVectorizedReader", "true")
+//  conf.set("spark.sql.parquet.enableNestedColumnVectorizedReader", "true")
 
   override def run: IO[Unit] = {
 
@@ -38,10 +39,15 @@ object WikipediaApp extends IOApp.Simple {
       .options(ParquetReader.Options(hadoopConf = conf))
       .parallelism(n = 4)
       .read(Path(path))
-      .printlns
 
     for {
       _ <- readAllStream
+        .parEvalMap(20){rec =>
+          IO.blocking {
+            val path: os.Path = os.root / "Users" / "pavel" / "devcore" / "Cats-Effects" / "fs2PlayGround" / "data" / "wiki" / "a.txt"
+            os.write.append(path, s"${rec.toString}\n")
+          }
+        }
         .compile
         .drain
     } yield ()
