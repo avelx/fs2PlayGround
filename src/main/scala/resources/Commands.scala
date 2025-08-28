@@ -1,7 +1,8 @@
 package resources
 
+import cats.effect.IO
 import models.StockPrice
-import skunk.Command
+import skunk.{Command, Session}
 import skunk.codec.all.{date, float8, varchar}
 import skunk.implicits.sql
 
@@ -21,4 +22,9 @@ object Commands {
       .to[StockPrice]
   }
 
+  def insertStock(session: Session[IO])(stock: StockPrice): IO[Unit] = {
+    session.prepare(insertPriceRecord)
+      .flatMap(_.execute(stock))
+      .void
+  }
 }
