@@ -56,22 +56,27 @@ object WikipediaApp extends IOApp.Simple {
         .evalMap { sourceFilePath =>
           val name = sourceFilePath.split('/').last
           Logger[IO].info(s"Path: ${sourceFilePath} || LastName: $name") *>
-          fromParquet[IO]
-            .as[Line]
-            .options(ParquetReader.Options(hadoopConf = conf))
-            .parallelism(n = 50)
-            .read(Path(sourceFilePath))
-            .parEvalMap(20) { rec =>
-              counter.update(c => c + 1) *>
-                counter.get.flatMap{ c =>
-                  Logger[IO].info(s"Counter: ${c}")
-                }  *>
-              IO.blocking {
-                val p: os.Path = savePath(name)
-                os.write.append(p, s"${rec.toString}\n")
+            fromParquet[IO]
+              .as[Line]
+              .options(ParquetReader.Options(hadoopConf = conf))
+              .parallelism(n = 50)
+              .read(Path(sourceFilePath))
+              .parEvalMap(20) { rec =>
+                counter.update(c => c + 1) *>
+                  counter.get.flatMap { c =>
+                    if (c % 1000 == 0) {
+                      Logger[IO].info(s"Counter: ${c}") *>
+                        IO.pure(c)
+                    } else {
+                      IO.pure(c)
+                    }
+                  } *>
+                  IO.blocking {
+                    val p: os.Path = savePath(name)
+                    os.write.append(p, s"${rec.toString}\n")
+                  }
               }
-            }
-            .compile.count
+              .compile.count
         }
     }
 
@@ -79,8 +84,10 @@ object WikipediaApp extends IOApp.Simple {
       counter <- Ref[IO].of(0)
       queue <- Queue.unbounded[IO, Option[String]]
       s = readAllStream(queue, counter)
-      _ <-  { os.list(dataSourcePath).toList.map(x => x.toIO.getPath)
-            .map(Some(_))  :+ None }
+      _ <- {
+        os.list(dataSourcePath).toList.map(x => x.toIO.getPath)
+          .map(Some(_)) :+ None
+      }
         .map(x => queue.tryOffer(x)).sequence
       counts <- s.compile.toList
       _ <- Logger[IO].info(s"Record number: $counts")
