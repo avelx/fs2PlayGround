@@ -27,7 +27,8 @@ libraryDependencies += "com.lihaoyi" %% "os-lib" % "0.11.3"
 // PostGres access
 libraryDependencies += "org.tpolecat" %% "skunk-core" % "0.6.4"
 
-libraryDependencies += "org.typelevel" %% "log4cats-slf4j" % "2.3.1"
+libraryDependencies += "org.typelevel" %% "log4cats-core"    % "2.7.1"
+libraryDependencies += "org.typelevel" %% "log4cats-slf4j" % "2.7.1"
 
 // parquet files r/w
 libraryDependencies += "com.github.mjakubowski84" %% "parquet4s-fs2" % "2.23.0"
@@ -36,6 +37,6 @@ libraryDependencies += "org.apache.hadoop" % "hadoop-client" % "3.3.0"
 
 libraryDependencies += "com.github.pureconfig" %% "pureconfig-core" % "0.17.9"
 
-libraryDependencies +=  "ch.qos.logback" % "logback-classic" % "1.2.11"
+//libraryDependencies +=  "ch.qos.logback" % "logback-classic" % "1.2.11"
 
 fork := true
