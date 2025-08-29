@@ -51,7 +51,7 @@ object WikipediaApp extends IOApp.Simple {
 
     def readAllStream(queue: Queue[IO, Option[String]]): fs2.Stream[IO, Long] = {
       fs2.Stream.fromQueueNoneTerminated(queue)
-        //.covary[IO]
+        .covary[IO]
         .map(x => {
           Logger[IO].info(s"Extract: $x")
           x
