@@ -15,7 +15,7 @@ object WikipediaApp extends IOApp.Simple {
   val isProd : Boolean = false
 
   private def savePath(name: String): os.Path = if (isProd) {
-    os.root / "home" / "pavel" / "data" / s"wiki_${name}.txt"
+    os.root / "home" / "pavel" / "data" / "wikipidia" / s"wiki_${name}.txt"
   } else {
     os.root / "Users" / "pavel" / "devcore" / "Cats-Effects" / "fs2PlayGround" / "data" / "wiki" / s"${name}.txt"
   }
