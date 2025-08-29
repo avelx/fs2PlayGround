@@ -13,8 +13,8 @@ import org.typelevel.log4cats.slf4j.Slf4jLogger
 
 object WikipediaApp extends IOApp.Simple {
 
-  implicit def logger[F[_] : Sync]: Logger[F] = Slf4jLogger.getLogger[F]
-
+  implicit val logger: SelfAwareStructuredLogger[IO] = Slf4jLogger.getLogger[IO]
+  
   val appConfig = WikiConfig.load
 
   private def savePath(name: String): os.Path = if (appConfig.isProd) {
