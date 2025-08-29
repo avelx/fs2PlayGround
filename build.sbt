@@ -39,4 +39,4 @@ libraryDependencies += "com.github.pureconfig" %% "pureconfig-core" % "0.17.9"
 
 //libraryDependencies +=  "ch.qos.logback" % "logback-classic" % "1.2.11"
 
-fork := true
+Compile / run / fork := true
