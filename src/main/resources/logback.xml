@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Configuration xmlns="https://logging.apache.org/xml/ns"
+<Configuration
                xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-               xsi:schemaLocation="
-                   https://logging.apache.org/xml/ns
-                   https://logging.apache.org/xml/ns/log4j-config-2.xsd">
+               xsi:schemaLocation="https://logging.apache.org/xml/ns">
     <Appenders>
         <Console name="CONSOLE">
             <PatternLayout pattern="%p - %m%n"/>
