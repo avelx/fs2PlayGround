@@ -64,14 +64,14 @@ object WikipediaApp extends IOApp.Simple {
               .parEvalMap(20) { rec =>
                 counter.update(c => c + 1) *>
                   counter.get.flatMap { c =>
-                    if (c % 100000 == 0) {
+                    if (c % 100000 == 0) { // Customised logging: log only 1M records
                       Logger[IO].info(s"Counter: ${c}") *>
                         IO.pure(c)
                     } else {
                       IO.pure(c)
                     }
                   } *>
-                  IO.blocking {
+                  IO.blocking { // Write into file
                     val p: os.Path = savePath(name)
                     os.write.append(p, s"${rec.toString}\n")
                   }
