@@ -53,12 +53,12 @@ object WikipediaApp extends IOApp.Simple {
       fs2.Stream.fromQueueNoneTerminated(queue)
         //.covary[IO]
         .map(x => {
-          logger.info(s"Extract: $x")
+          Logger[IO].info(s"Extract: $x")
           x
         })
         .evalMap { sourceFilePath =>
           val name = sourceFilePath.split('/').last
-          logger.info(s"LastName: $name")
+          Logger[IO].info(s"LastName: $name")
           fromParquet[IO]
             .as[Line]
             .options(ParquetReader.Options(hadoopConf = conf))
@@ -80,7 +80,7 @@ object WikipediaApp extends IOApp.Simple {
       _ <-  os.list(dataSourcePath).toList.map(x => x.toIO.getPath)
             .map(Some(_)).map(x => queue.tryOffer(x)).sequence
       counts <- s.compile.toList
-      _ <- logger.info(s"Record number: $counts")
+      _ <- Logger[IO].info(s"Record number: $counts")
     } yield ()
 
 
