@@ -1,3 +1,4 @@
+
 ThisBuild / version := "0.1.0-SNAPSHOT"
 
 ThisBuild / scalaVersion := "3.3.6"
@@ -37,6 +38,7 @@ libraryDependencies += "org.apache.hadoop" % "hadoop-client" % "3.3.0"
 
 libraryDependencies += "com.github.pureconfig" %% "pureconfig-core" % "0.17.9"
 
+libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.5.18"
 //libraryDependencies +=  "ch.qos.logback" % "logback-classic" % "1.2.11"
 
 Compile / run / fork := true
