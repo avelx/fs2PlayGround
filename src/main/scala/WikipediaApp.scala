@@ -37,7 +37,7 @@ object WikipediaApp extends IOApp.Simple {
     |-- categories: array (nullable = true)
     |    |-- element: string (containsNull = true)
    */
-  // TODO: re-instate categories
+  // TODO: re-instate categories as its not extracted atm
   case class Categories(element: String)
 
   case class Line(id: String,
@@ -45,8 +45,6 @@ object WikipediaApp extends IOApp.Simple {
                   text: String)
 
   val conf: Configuration = Configuration()
-  //  conf.set("spark.sql.parquet.enableVectorizedReader", "true")
-  //  conf.set("spark.sql.parquet.enableNestedColumnVectorizedReader", "true")
 
   override def run: IO[Unit] = {
 
@@ -55,7 +53,7 @@ object WikipediaApp extends IOApp.Simple {
         .covary[IO]
         .evalMap { sourceFilePath =>
           val name = sourceFilePath.split('/').last
-          Logger[IO].info(s"Path: ${sourceFilePath} || LastName: $name") *>
+          Logger[IO].info(s"Path: ${sourceFilePath} || File name: $name") *>
             fromParquet[IO]
               .as[Line]
               .options(ParquetReader.Options(hadoopConf = conf))
@@ -86,11 +84,11 @@ object WikipediaApp extends IOApp.Simple {
       s = readAllStream(queue, counter)
       _ <- {
         os.list(dataSourcePath).toList.map(x => x.toIO.getPath)
-          .map(Some(_)) :+ None
+          .map(Some(_)) :+ None // None is added at the end to signal Stream to terminate
       }
         .map(x => queue.tryOffer(x)).sequence
       counts <- s.compile.toList
-      _ <- Logger[IO].info(s"Record number: $counts")
+      _ <- Logger[IO].info(s"Total records: ${counts.sum}")
     } yield ()
 
 
