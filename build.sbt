@@ -33,3 +33,5 @@ libraryDependencies += "org.typelevel" %% "log4cats-slf4j" % "2.3.1"
 libraryDependencies += "com.github.mjakubowski84" %% "parquet4s-fs2" % "2.23.0"
 
 libraryDependencies += "org.apache.hadoop" % "hadoop-client" % "3.3.0"
+
+fork := true
