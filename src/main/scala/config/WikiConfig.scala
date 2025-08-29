@@ -3,7 +3,7 @@ package config
 import pureconfig.ConfigSource
 import pureconfig.*
 import pureconfig.error.ConfigReaderFailures
-//import pureconfig.generic.derivation.default._
+import pureconfig.generic.derivation.default._
 
 case class WikiConfig(isProd: Boolean) derives ConfigReader
 
