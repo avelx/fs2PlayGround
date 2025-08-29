@@ -65,11 +65,7 @@ object WikipediaApp extends IOApp.Simple {
             .parEvalMap(10) { rec =>
               IO.blocking {
                 val p: os.Path = savePath(name)
-                if (p.toIO.exists()) {
-                  os.write.append(p, s"${rec.toString}\n")
-                } else {
-                  os.write(p, s"${rec.toString}\n")
-                }
+                os.write.append(p, s"${rec.toString}\n")
               }
             }
             .compile.count
