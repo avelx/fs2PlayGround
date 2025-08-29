@@ -36,4 +36,6 @@ libraryDependencies += "org.apache.hadoop" % "hadoop-client" % "3.3.0"
 
 libraryDependencies += "com.github.pureconfig" %% "pureconfig-core" % "0.17.9"
 
+libraryDependencies +=  "ch.qos.logback" % "logback-classic" % "1.2.11"
+
 fork := true
