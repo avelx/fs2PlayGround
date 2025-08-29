@@ -64,7 +64,7 @@ object WikipediaApp extends IOApp.Simple {
               .parEvalMap(20) { rec =>
                 counter.update(c => c + 1) *>
                   counter.get.flatMap { c =>
-                    if (c % 1000 == 0) {
+                    if (c % 100000 == 0) {
                       Logger[IO].info(s"Counter: ${c}") *>
                         IO.pure(c)
                     } else {
