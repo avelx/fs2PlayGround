@@ -65,9 +65,9 @@ object WikipediaApp extends IOApp.Simple {
           fromParquet[IO]
             .as[Line]
             .options(ParquetReader.Options(hadoopConf = conf))
-            .parallelism(n = 20)
+            .parallelism(n = 50)
             .read(Path(sourceFilePath))
-            .parEvalMap(10) { rec =>
+            .parEvalMap(20) { rec =>
               IO.blocking {
                 val p: os.Path = savePath(name)
                 os.write.append(p, s"${rec.toString}\n")
