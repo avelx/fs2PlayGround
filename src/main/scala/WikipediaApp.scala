@@ -77,8 +77,9 @@ object WikipediaApp extends IOApp.Simple {
     for {
       queue <- Queue.unbounded[IO, Option[String]]
       s = readAllStream(queue)
-      _ <-  os.list(dataSourcePath).toList.map(x => x.toIO.getPath)
-            .map(Some(_)).map(x => queue.tryOffer(x)).sequence
+      _ <-  { os.list(dataSourcePath).toList.map(x => x.toIO.getPath)
+            .map(Some(_))  :+ None }
+        .map(x => queue.tryOffer(x)).sequence
       counts <- s.compile.toList
       _ <- Logger[IO].info(s"Record number: $counts")
     } yield ()
