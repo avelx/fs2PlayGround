@@ -5,8 +5,13 @@ import cats.effect.{IO, IOApp}
 import com.github.mjakubowski84.parquet4s.parquet.fromParquet
 import com.github.mjakubowski84.parquet4s.{ParquetReader, Path}
 import org.apache.hadoop.conf.Configuration
-import org.typelevel.log4cats.Logger
+import org.typelevel.log4cats.{Logger, LoggerFactory}
+import cats.effect.IO
+import cats.Monad
+import cats.syntax.all.*
+import org.typelevel.log4cats.*
 import org.typelevel.log4cats.slf4j.Slf4jLogger
+
 
 object WikipediaApp extends IOApp.Simple {
 
@@ -51,12 +56,12 @@ object WikipediaApp extends IOApp.Simple {
       fs2.Stream.fromQueueNoneTerminated(queue)
         //.covary[IO]
         .map(x => {
-          println(s"Extract: $x")
+          Logger[IO].info(s"Extract: $x")
           x
         })
         .evalMap { sourceFilePath =>
           val name = sourceFilePath.split('/').last
-          println(s"LastName: $name")
+          Logger[IO].info(s"LastName: $name")
           fromParquet[IO]
             .as[Line]
             .options(ParquetReader.Options(hadoopConf = conf))
@@ -77,7 +82,8 @@ object WikipediaApp extends IOApp.Simple {
       s = readAllStream(queue)
       _ <-  os.list(dataSourcePath).toList.map(x => x.toIO.getPath)
             .map(Some(_)).map(x => queue.tryOffer(x)).sequence
-      _ <- s.compile.toList
+      counts <- s.compile.toList
+      _ <- Logger[IO].info(s"Record number: $counts")
     } yield ()
 
 
