@@ -1,5 +1,4 @@
 import cats.effect.IO.asyncForIO
-import cats.effect.kernel.Sync
 import cats.effect.std.Queue
 import cats.effect.{IO, IOApp}
 import cats.syntax.all.*
@@ -14,7 +13,7 @@ import org.typelevel.log4cats.slf4j.Slf4jLogger
 object WikipediaApp extends IOApp.Simple {
 
   implicit val logger: SelfAwareStructuredLogger[IO] = Slf4jLogger.getLogger[IO]
-  
+
   val appConfig = WikiConfig.load
 
   private def savePath(name: String): os.Path = if (appConfig.isProd) {
@@ -54,12 +53,12 @@ object WikipediaApp extends IOApp.Simple {
       fs2.Stream.fromQueueNoneTerminated(queue)
         //.covary[IO]
         .map(x => {
-          Logger[IO].info(s"Extract: $x")
+          logger.info(s"Extract: $x")
           x
         })
         .evalMap { sourceFilePath =>
           val name = sourceFilePath.split('/').last
-          Logger[IO].info(s"LastName: $name")
+          logger.info(s"LastName: $name")
           fromParquet[IO]
             .as[Line]
             .options(ParquetReader.Options(hadoopConf = conf))
@@ -81,7 +80,7 @@ object WikipediaApp extends IOApp.Simple {
       _ <-  os.list(dataSourcePath).toList.map(x => x.toIO.getPath)
             .map(Some(_)).map(x => queue.tryOffer(x)).sequence
       counts <- s.compile.toList
-      _ <- Logger[IO].info(s"Record number: $counts")
+      _ <- logger.info(s"Record number: $counts")
     } yield ()
 
 
