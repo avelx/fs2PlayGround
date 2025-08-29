@@ -54,20 +54,21 @@ object WikipediaApp extends IOApp.Simple {
           println(s"Extract: $x")
           x
         })
-        .evalMap { path =>
-          val name = path.split('\\').last
+        .evalMap { sourceFilePath =>
+          val name = sourceFilePath.split('\\').last
+          println(s"LastName: $name")
           fromParquet[IO]
             .as[Line]
             .options(ParquetReader.Options(hadoopConf = conf))
             .parallelism(n = 20)
-            .read(Path(path))
+            .read(Path(sourceFilePath))
             .parEvalMap(10) { rec =>
               IO.blocking {
-                val path: os.Path = savePath(name)
-                if (path.toIO.exists()) {
-                  os.write.append(path, s"${rec.toString}\n")
+                val p: os.Path = savePath(name)
+                if (p.toIO.exists()) {
+                  os.write.append(p, s"${rec.toString}\n")
                 } else {
-                  os.write(path, s"${rec.toString}\n")
+                  os.write(p, s"${rec.toString}\n")
                 }
               }
             }
