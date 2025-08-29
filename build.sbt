@@ -34,4 +34,6 @@ libraryDependencies += "com.github.mjakubowski84" %% "parquet4s-fs2" % "2.23.0"
 
 libraryDependencies += "org.apache.hadoop" % "hadoop-client" % "3.3.0"
 
+libraryDependencies += "com.github.pureconfig" %% "pureconfig-core" % "0.17.9"
+
 fork := true

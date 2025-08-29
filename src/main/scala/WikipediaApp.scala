@@ -2,13 +2,11 @@ import cats.effect.IO.asyncForIO
 import cats.effect.kernel.Sync
 import cats.effect.std.Queue
 import cats.effect.{IO, IOApp}
+import cats.syntax.all.*
 import com.github.mjakubowski84.parquet4s.parquet.fromParquet
 import com.github.mjakubowski84.parquet4s.{ParquetReader, Path}
+import config.WikiConfig
 import org.apache.hadoop.conf.Configuration
-import org.typelevel.log4cats.{Logger, LoggerFactory}
-import cats.effect.IO
-import cats.Monad
-import cats.syntax.all.*
 import org.typelevel.log4cats.*
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 
@@ -17,15 +15,15 @@ object WikipediaApp extends IOApp.Simple {
 
   implicit def logger[F[_] : Sync]: Logger[F] = Slf4jLogger.getLogger[F]
 
-  val isProd : Boolean = false
+  val appConfig = WikiConfig.load
 
-  private def savePath(name: String): os.Path = if (isProd) {
+  private def savePath(name: String): os.Path = if (appConfig.isProd) {
     os.root / "home" / "pavel" / "data" / "wikipidia" / s"wiki_${name}.txt"
   } else {
     os.root / "Users" / "pavel" / "devcore" / "Cats-Effects" / "fs2PlayGround" / "data" / "wiki" / s"${name}.txt"
   }
 
-  private val dataSourcePath: os.Path = if (isProd) {
+  private val dataSourcePath: os.Path = if (appConfig.isProd) {
     os.pwd / "data" / "wikipedia"
   } else {
     os.pwd / "data" / "wiki"
