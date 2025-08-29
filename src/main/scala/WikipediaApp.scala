@@ -1,4 +1,5 @@
 import cats.effect.IO.asyncForIO
+import cats.effect.kernel.Ref
 import cats.effect.std.Queue
 import cats.effect.{IO, IOApp}
 import cats.syntax.all.*
@@ -49,7 +50,7 @@ object WikipediaApp extends IOApp.Simple {
 
   override def run: IO[Unit] = {
 
-    def readAllStream(queue: Queue[IO, Option[String]]): fs2.Stream[IO, Long] = {
+    def readAllStream(queue: Queue[IO, Option[String]], counter: Ref[IO, Int]): fs2.Stream[IO, Long] = {
       fs2.Stream.fromQueueNoneTerminated(queue)
         .covary[IO]
         .evalMap { sourceFilePath =>
@@ -61,6 +62,10 @@ object WikipediaApp extends IOApp.Simple {
             .parallelism(n = 50)
             .read(Path(sourceFilePath))
             .parEvalMap(20) { rec =>
+              counter.update(c => c + 1) *>
+                counter.get.flatMap{ c =>
+                  Logger[IO].info(s"Counter: ${c}")
+                }  *>
               IO.blocking {
                 val p: os.Path = savePath(name)
                 os.write.append(p, s"${rec.toString}\n")
@@ -71,8 +76,9 @@ object WikipediaApp extends IOApp.Simple {
     }
 
     for {
+      counter <- Ref[IO].of(0)
       queue <- Queue.unbounded[IO, Option[String]]
-      s = readAllStream(queue)
+      s = readAllStream(queue, counter)
       _ <-  { os.list(dataSourcePath).toList.map(x => x.toIO.getPath)
             .map(Some(_))  :+ None }
         .map(x => queue.tryOffer(x)).sequence
