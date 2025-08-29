@@ -52,13 +52,9 @@ object WikipediaApp extends IOApp.Simple {
     def readAllStream(queue: Queue[IO, Option[String]]): fs2.Stream[IO, Long] = {
       fs2.Stream.fromQueueNoneTerminated(queue)
         .covary[IO]
-        .map(x => {
-          Logger[IO].info(s"Extract: $x")
-          x
-        })
         .evalMap { sourceFilePath =>
           val name = sourceFilePath.split('/').last
-          Logger[IO].info(s"LastName: $name")
+          Logger[IO].info(s"Path: ${sourceFilePath} || LastName: $name") *>
           fromParquet[IO]
             .as[Line]
             .options(ParquetReader.Options(hadoopConf = conf))
