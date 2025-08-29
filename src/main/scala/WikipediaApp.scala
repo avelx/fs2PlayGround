@@ -55,7 +55,7 @@ object WikipediaApp extends IOApp.Simple {
           x
         })
         .evalMap { sourceFilePath =>
-          val name = sourceFilePath.split('\\').last
+          val name = sourceFilePath.split('/').last
           println(s"LastName: $name")
           fromParquet[IO]
             .as[Line]
