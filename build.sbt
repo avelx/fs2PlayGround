@@ -28,7 +28,7 @@ libraryDependencies += "com.lihaoyi" %% "os-lib" % "0.11.3"
 // PostGres access
 libraryDependencies += "org.tpolecat" %% "skunk-core" % "0.6.4"
 
-libraryDependencies += "org.typelevel" %% "log4cats-core"    % "2.7.1"
+libraryDependencies += "org.typelevel" %% "log4cats-core" % "2.7.1"
 libraryDependencies += "org.typelevel" %% "log4cats-slf4j" % "2.7.1"
 
 // parquet files r/w
@@ -42,5 +42,15 @@ libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.5.18"
 //libraryDependencies +=  "ch.qos.logback" % "logback-classic" % "1.2.11"
 
 libraryDependencies += "com.github.fd4s" %% "fs2-kafka" % "3.9.0"
+
+libraryDependencies += "io.circe" %% "circe-generic" % "0.14.14"
+
+val http4sVersion = "0.23.30"
+
+libraryDependencies ++= Seq(
+  "org.http4s" %% "http4s-ember-server" % http4sVersion,
+  "org.http4s" %% "http4s-circe" % http4sVersion,
+  "org.http4s" %% "http4s-dsl" % http4sVersion,
+)
 
 Compile / run / fork := true
