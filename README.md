@@ -10,3 +10,6 @@ TODO:
 
   * Add accumulators / processing stats
   * Add logic to mark processed files:: move processed file ??
+
+TODO::[KAFKA] 
+    * Primitive Consumer / Producer

@@ -41,4 +41,6 @@ libraryDependencies += "com.github.pureconfig" %% "pureconfig-core" % "0.17.9"
 libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.5.18"
 //libraryDependencies +=  "ch.qos.logback" % "logback-classic" % "1.2.11"
 
+libraryDependencies += "com.github.fd4s" %% "fs2-kafka" % "3.9.0"
+
 Compile / run / fork := true
