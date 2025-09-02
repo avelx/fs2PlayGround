@@ -5,14 +5,18 @@ import cats.effect.{IO, IOApp, Ref}
 import com.comcast.ip4s.{ipv4, port}
 import fs2.Chunk
 import fs2.kafka.*
+import models.kafkaModels.KafkaStats
 import org.http4s.HttpRoutes
 import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.server.Router
 import routes.KafkaStreamServiceControl
+
 import scala.concurrent.duration.DurationInt
 
 object streams {
 
+
+  
   private val producerSettings = ProducerSettings[IO, String, String]
     .withBootstrapServers("localhost:9092")
     .withEnableIdempotence(true)
@@ -24,7 +28,7 @@ object streams {
     .withBootstrapServers("localhost:9092")
     .withGroupId("group")
 
-  val producerStream = KafkaProducer
+  def producerStream = KafkaProducer
     .stream(producerSettings)
     .flatMap { producer =>
       fs2.Stream.emits(1 to 10000).covary[IO].map { i =>
@@ -33,16 +37,26 @@ object streams {
           )
         }
         .evalMap(producer.produce)
-        .metered(100.millis)
         .groupWithin(100, 3.seconds)
         .evalMap(_.sequence)
+      //x => {
+//          x.sequence.map(x => {
+//            stats.update(x => x.copy(recordsProcessed = x.recordsProcessed + 1))
+//            x
+//          })
+//        })
     }
 
-  private def processRecord(record: ConsumerRecord[String, String]): IO[Unit] =
-    IO(println(s"Processing record: $record")) //.as(CommitNow)
+  private def processRecord(record: ConsumerRecord[String, String],
+                            stats: Ref[IO, KafkaStats]): IO[Unit] = {
+    stats.update(x => x.copy(recordsProcessed = x.recordsProcessed + 1)) *>
+      IO(println(s"Processing record: $record"))
+  }
+  //.as(CommitNow)
 
   def interruptableConsumerStream(stopFlag: Ref[IO, Int],
-                                  suspendFlag: Ref[IO, Int]): fs2.Stream[IO, Unit] =
+                                  suspendFlag: Ref[IO, Int],
+                                  stats: Ref[IO, KafkaStats]): fs2.Stream[IO, Unit] =
     fs2.Stream
       .eval(Deferred[IO, Unit])
       .flatMap { stopSwitch =>
@@ -66,7 +80,7 @@ object streams {
             .subscribeTo("topic")
             .records
             .mapAsync(25) { committable =>
-              processRecord(committable.record).as(committable.offset)
+              processRecord(committable.record, stats).as(committable.offset)
             }
             .through(commitBatchWithin(25, 15.seconds))
 

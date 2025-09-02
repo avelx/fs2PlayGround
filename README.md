@@ -13,3 +13,4 @@ TODO:
 
 TODO::[KAFKA] 
     * Primitive Consumer / Producer
+    * Produce metrics / => Grafana
