@@ -13,9 +13,13 @@ import scala.concurrent.duration.DurationInt
 
 object streams {
 
-  private val producerSettings = ProducerSettings[IO, String, String].withBootstrapServers("localhost:9092")
+  private val producerSettings = ProducerSettings[IO, String, String]
+    .withBootstrapServers("localhost:9092")
+    .withEnableIdempotence(true)
+    .withRetries(10)
 
   private val consumerSettings = ConsumerSettings[IO, String, String]
+    .withIsolationLevel(IsolationLevel.ReadCommitted)
     .withAutoOffsetReset(AutoOffsetReset.Earliest)
     .withBootstrapServers("localhost:9092")
     .withGroupId("group")
@@ -29,6 +33,7 @@ object streams {
           )
         }
         .evalMap(producer.produce)
+        .metered(100.millis)
         .groupWithin(100, 3.seconds)
         .evalMap(_.sequence)
     }
@@ -36,33 +41,41 @@ object streams {
   private def processRecord(record: ConsumerRecord[String, String]): IO[Unit] =
     IO(println(s"Processing record: $record")) //.as(CommitNow)
 
-  def interpretableConsumerStream(state: Ref[IO, Int]) = fs2.Stream.eval(Deferred[IO, Unit])
-    .flatMap { switch =>
+  def interruptableConsumerStream(stopFlag: Ref[IO, Int],
+                                  suspendFlag: Ref[IO, Int]): fs2.Stream[IO, Unit] =
+    fs2.Stream
+      .eval(Deferred[IO, Unit])
+      .flatMap { stopSwitch =>
 
-      val switcher =
-        fs2.Stream.eval(
-          state.get.map(x => x >= 1).ifM(
+        val switcher = fs2.Stream.eval(
+          stopFlag.get.map(x => x >= 1).ifM(
             IO.println("Try to stop") *>
-              switch.complete(()),
+              stopSwitch.complete(()),
             IO.println("Still ON") *>
-              switch.tryGet
+              stopSwitch.tryGet
           )
         ).repeat.metered(1.second)
 
-      val consumerStream =
-        KafkaConsumer
-          .stream(consumerSettings)
-          .subscribeTo("topic")
-          .records
-          .mapAsync(25) { committable =>
-            processRecord(committable.record).as(committable.offset)
-          }
-          .through(commitBatchWithin(25, 15.seconds))
+        val suspender = fs2.Stream.eval(
+          suspendFlag.get.map(x => x > 0)
+        ).repeat.metered(1.second)
 
-      consumerStream
-        .interruptWhen(switch.get.attempt)
-        .concurrently(switcher)
-    }
+        val consumerStream =
+          KafkaConsumer
+            .stream(consumerSettings)
+            .subscribeTo("topic")
+            .records
+            .mapAsync(25) { committable =>
+              processRecord(committable.record).as(committable.offset)
+            }
+            .through(commitBatchWithin(25, 15.seconds))
+
+        consumerStream
+          .interruptWhen(stopSwitch.get.attempt)
+          .pauseWhen(suspender)
+          .concurrently(switcher)
+      }
+
 
   def switchStream(state: Ref[IO, Int]) = {
     fs2.Stream.eval(state.get)

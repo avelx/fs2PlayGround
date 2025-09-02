@@ -1,6 +1,6 @@
 import cats.effect.{IO, IOApp, Ref}
 import com.comcast.ip4s.{ipv4, port}
-import kafka.streams.{interpretableConsumerStream, producerStream}
+import kafka.streams.{interruptableConsumerStream, producerStream}
 import org.http4s.HttpRoutes
 import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.server.Router
@@ -10,8 +10,9 @@ object KafkaStreamApp extends IOApp.Simple {
 
   val run: IO[Unit] = {
     for {
-      status <- Ref[IO].of(0)
-      routes = KafkaStreamServiceControl(status)
+      stopFlag <- Ref[IO].of(0)
+      suspendFlag <- Ref[IO].of(0)
+      routes = KafkaStreamServiceControl(stopFlag, suspendFlag)
       services = routes.streamControl
       httpApp = Router("/api" -> services).orNotFound
       ember = EmberServerBuilder
@@ -21,9 +22,9 @@ object KafkaStreamApp extends IOApp.Simple {
         .withHttpApp(httpApp)
         .build
         .use(_ => IO.never)
-      consumer = interpretableConsumerStream(status).compile.drain
+      consumer = interruptableConsumerStream(stopFlag, suspendFlag).compile.drain
       producer = producerStream.covary[IO].compile.drain *> IO.never
-      _ <- IO.racePair(IO.racePair(ember, consumer), producer)
+      _ <- IO.racePair(ember, IO.racePair(consumer, producer) )
     } yield ()
 
   }
