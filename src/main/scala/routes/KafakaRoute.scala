@@ -28,6 +28,8 @@ object KafkaRoute {
 
   def getStatus(status: Ref[IO, Int]): IO[Int] = status.get
 
+  def incStatus(status: Ref[IO, Int]): IO[Int] = status.updateAndGet(x => x + 1)
+
 }
 
 
@@ -35,11 +37,15 @@ case class KafkaService(
                       status: Ref[IO, Int])  extends Http4sDsl[IO] {
   import KafkaRoute._
 
-  val tweetService = HttpRoutes.of[IO] {
+  val streamControl = HttpRoutes.of[IO] {
     case GET -> Root / "tweet"  =>
       getTweet.flatMap(Ok(_))
     case GET -> Root / "status" =>
       getStatus(status).flatMap { res =>
+        Ok(res)
+      }
+    case GET -> Root / "stop" =>
+      incStatus(status).flatMap { res =>
         Ok(res)
       }
   }

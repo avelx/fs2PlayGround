@@ -1,3 +1,4 @@
+import cats.effect.kernel.Deferred
 import cats.effect.{IO, IOApp, Ref}
 import com.comcast.ip4s.{ipv4, port}
 import fs2.Chunk
@@ -36,44 +37,54 @@ object KafkaSimpleApp extends IOApp.Simple {
     def processRecord(record: ConsumerRecord[String, String]): IO[Unit] =
       IO(println(s"Processing record: $record")) //.as(CommitNow)
 
+    def interpretableConsumerStream(state: Ref[IO, Int]) = fs2.Stream.eval(Deferred[IO, Unit])
+      .flatMap { switch =>
+        
+        val switcher =
+          fs2.Stream.eval(
+            state.get.map(x => x >= 1).ifM(
+              IO.println("Try to stop") *> 
+                switch.complete(()),
+              IO.println("Still ON") *>
+                switch.tryGet
+            )
+          ).repeat.metered(1.second)
 
-    val consumerStream =
-      KafkaConsumer
-        .stream(consumerSettings)
-        .subscribeTo("topic")
-        .records
-        .mapAsync(25) { committable =>
-          processRecord(committable.record).as(committable.offset)
-        }
-        .through(commitBatchWithin(25, 15.seconds))
-//        .partitionedRecords
-//        .map { partitionStream =>
-//          partitionStream.evalMap { committable =>
-//            processRecord(committable.record)
-//          }
-//        }
-//        .parJoinUnbounded
+        val consumerStream =
+          KafkaConsumer
+            .stream(consumerSettings)
+            .subscribeTo("topic")
+            .records
+            .mapAsync(25) { committable =>
+              processRecord(committable.record).as(committable.offset)
+            }
+            .through(commitBatchWithin(25, 15.seconds))
 
+        consumerStream
+          .interruptWhen(switch.get.attempt)
+          .concurrently(switcher)
+      }
 
-    //for {
-      //_ <- producerStream.covary[IO].compile.drain
-      //_ <- consumerStream.covary[IO].compile.drain
-    //} yield ()
-
-
+    def switchStream(state: Ref[IO, Int]) = {
+      fs2.Stream.eval(state.get)
+        .delayBy(5.seconds)
+    }
 
     for {
       streamStatus <- Ref[IO].of(0)
       routes = KafkaService(streamStatus)
-      services = routes.tweetService
+      services = routes.streamControl
       httpApp = Router("/api" -> services).orNotFound
-      _ <- EmberServerBuilder
+      ember = EmberServerBuilder
         .default[IO]
         .withHost(ipv4"0.0.0.0")
         .withPort(port"8080")
         .withHttpApp(httpApp)
         .build
         .use(_ => IO.never)
+      consumer = interpretableConsumerStream(streamStatus).compile.drain
+      producer = producerStream.covary[IO].compile.drain *> IO.never
+      _ <- IO.racePair( IO.racePair(ember, consumer), producer)
     } yield ()
 
   }
