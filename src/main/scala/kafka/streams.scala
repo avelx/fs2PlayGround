@@ -13,9 +13,9 @@ import scala.concurrent.duration.DurationInt
 
 object streams {
 
-  val producerSettings = ProducerSettings[IO, String, String].withBootstrapServers("localhost:9092")
+  private val producerSettings = ProducerSettings[IO, String, String].withBootstrapServers("localhost:9092")
 
-  val consumerSettings = ConsumerSettings[IO, String, String]
+  private val consumerSettings = ConsumerSettings[IO, String, String]
     .withAutoOffsetReset(AutoOffsetReset.Earliest)
     .withBootstrapServers("localhost:9092")
     .withGroupId("group")
@@ -33,7 +33,7 @@ object streams {
         .evalMap(_.sequence)
     }
 
-  def processRecord(record: ConsumerRecord[String, String]): IO[Unit] =
+  private def processRecord(record: ConsumerRecord[String, String]): IO[Unit] =
     IO(println(s"Processing record: $record")) //.as(CommitNow)
 
   def interpretableConsumerStream(state: Ref[IO, Int]) = fs2.Stream.eval(Deferred[IO, Unit])
