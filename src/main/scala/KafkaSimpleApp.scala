@@ -6,7 +6,7 @@ import fs2.kafka.*
 import org.http4s.HttpRoutes
 import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.server.Router
-import routes.KafkaService
+import routes.KafkaStreamServiceControl
 
 import scala.concurrent.duration.DurationInt
 
@@ -72,7 +72,7 @@ object KafkaSimpleApp extends IOApp.Simple {
 
     for {
       status <- Ref[IO].of(0)
-      routes = KafkaService(status)
+      routes = KafkaStreamServiceControl(status)
       services = routes.streamControl
       httpApp = Router("/api" -> services).orNotFound
       ember = EmberServerBuilder
