@@ -24,7 +24,7 @@ object KafkaSimpleApp extends IOApp.Simple {
     val producerStream = KafkaProducer
       .stream(producerSettings)
       .flatMap { producer =>
-        fs2.Stream.emits(1 to 100).covary[IO].map { i =>
+        fs2.Stream.emits(1 to 10000).covary[IO].map { i =>
             ProducerRecords.one(
               ProducerRecord("topic", s"key-$i", s"value-$i")
             )
@@ -39,11 +39,11 @@ object KafkaSimpleApp extends IOApp.Simple {
 
     def interpretableConsumerStream(state: Ref[IO, Int]) = fs2.Stream.eval(Deferred[IO, Unit])
       .flatMap { switch =>
-        
+
         val switcher =
           fs2.Stream.eval(
             state.get.map(x => x >= 1).ifM(
-              IO.println("Try to stop") *> 
+              IO.println("Try to stop") *>
                 switch.complete(()),
               IO.println("Still ON") *>
                 switch.tryGet
@@ -71,8 +71,8 @@ object KafkaSimpleApp extends IOApp.Simple {
     }
 
     for {
-      streamStatus <- Ref[IO].of(0)
-      routes = KafkaService(streamStatus)
+      status <- Ref[IO].of(0)
+      routes = KafkaService(status)
       services = routes.streamControl
       httpApp = Router("/api" -> services).orNotFound
       ember = EmberServerBuilder
@@ -82,7 +82,7 @@ object KafkaSimpleApp extends IOApp.Simple {
         .withHttpApp(httpApp)
         .build
         .use(_ => IO.never)
-      consumer = interpretableConsumerStream(streamStatus).compile.drain
+      consumer = interpretableConsumerStream(status).compile.drain
       producer = producerStream.covary[IO].compile.drain *> IO.never
       _ <- IO.racePair( IO.racePair(ember, consumer), producer)
     } yield ()
