@@ -56,5 +56,9 @@ libraryDependencies ++= Seq(
 libraryDependencies += "edu.stanford.nlp" % "stanford-corenlp" % "4.5.10" classifier "models"
 libraryDependencies += "edu.stanford.nlp" % "stanford-corenlp" % "4.5.10"
 
+libraryDependencies +=  "org.typelevel" %% "weaver-cats" % "0.10.1" % Test
+
+libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.19" % "test"
+
 
 Compile / run / fork := true
