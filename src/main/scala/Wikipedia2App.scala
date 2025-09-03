@@ -102,12 +102,25 @@ object Wikipedia2App extends IOApp.Simple {
               .options(ParquetReader.Options(hadoopConf = conf))
               .parallelism(n = 50)
               .read(Path(sourceFilePath))
-              .parEvalMap(20) { rec =>
-                    IO.blocking{
-                      val wikiCoreDoc = processRecordBySNLP(rec)
-                      val categories = extract(wikiCoreDoc.core.sentences().toString)
-                      println(WikiRecordToSubmit(rec.id, categories))
-                    }
+              .parEvalMap(20)(rec => IO.blocking {
+                val wikiCoreDoc = processRecordBySNLP(rec)
+                val categories = extract(wikiCoreDoc.core.sentences().toString)
+                WikiRecordToSubmit(rec.id, categories)
+              })
+              .parEvalMap(20)(recToSubmit => {
+                IO.blocking(kafka.streams.
+                  producerStream2(recToSubmit)
+                  .compile.drain
+                )
+              })
+//              .evalMap(r =>  )
+//              .parEvalMap(20) { rec =>
+//                    IO.blocking{
+//                      val wikiCoreDoc = processRecordBySNLP(rec)
+//                      val categories = extract(wikiCoreDoc.core.sentences().toString)
+//                      producerStream2()
+//                      println(WikiRecordToSubmit(rec.id, categories))
+//                    }
 //                IO.println(processRecordBySNLP(rec)) //simple print result
 //                IO.blocking { // Write into file
 //                  val wikiCoreDoc = processRecordBySNLP(rec)
@@ -115,7 +128,8 @@ object Wikipedia2App extends IOApp.Simple {
 //                  val p: os.Path = savePath(wikiCoreDoc.id)
 //                  os.write.append(p, s"${categories.mkString("\n")}\n")
 //                }
-              }.compile.drain
+//              }
+              .compile.drain
         }
     }
 
