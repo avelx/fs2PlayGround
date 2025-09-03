@@ -12,5 +12,7 @@ TODO:
   * Add logic to mark processed files:: move processed file ??
 
 TODO::[KAFKA] 
-    * Primitive Consumer / Producer
+    * Primitive Consumer / Producer: 
+    ** at the moment Status contains defects 
+
     * Produce metrics / => Grafana
