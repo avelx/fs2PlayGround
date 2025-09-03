@@ -53,4 +53,8 @@ libraryDependencies ++= Seq(
   "org.http4s" %% "http4s-dsl" % http4sVersion,
 )
 
+libraryDependencies += "edu.stanford.nlp" % "stanford-corenlp" % "4.5.10" classifier "models"
+libraryDependencies += "edu.stanford.nlp" % "stanford-corenlp" % "4.5.10"
+
+
 Compile / run / fork := true

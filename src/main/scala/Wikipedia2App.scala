@@ -1,5 +1,4 @@
 import cats.effect.IO.asyncForIO
-import cats.effect.kernel.Ref
 import cats.effect.std.Queue
 import cats.effect.{IO, IOApp}
 import cats.syntax.all.*
@@ -9,6 +8,10 @@ import config.WikiConfig
 import org.apache.hadoop.conf.Configuration
 import org.typelevel.log4cats.*
 import org.typelevel.log4cats.slf4j.Slf4jLogger
+
+import java.util.Properties
+import edu.stanford.nlp.*
+import edu.stanford.nlp.pipeline.{CoreDocument, StanfordCoreNLP}
 
 
 object Wikipedia2App extends IOApp.Simple {
@@ -45,6 +48,7 @@ object Wikipedia2App extends IOApp.Simple {
                         text: String)
 
   case class WikiRecordStats(id: String, title: String, frequency: Map[String, Int])
+  case class WikiCoreDoc(id: String, title: String, core: CoreDocument)
 
   val conf: Configuration = Configuration()
 
@@ -71,6 +75,18 @@ object Wikipedia2App extends IOApp.Simple {
       WikiRecordStats(rec.id, rec.title, frequency)
     }
 
+    def processRecordBySNLP(rec: WikiRecord): WikiCoreDoc = {
+      // set up pipeline properties
+      val props = new Properties()
+      // set the list of annotators to run
+      props.setProperty("annotators", "tokenize,pos,lemma,ner,depparse")
+      // build pipeline
+      val pipeline = new StanfordCoreNLP(props)
+      // create a document object
+      val coreDoc = pipeline.processToCoreDocument(rec.text)
+      WikiCoreDoc(rec.id,  rec.title, coreDoc)
+    }
+
     def readAllStream(queue: Queue[IO, Option[String]]) = {
       fs2.Stream.fromQueueNoneTerminated(queue)
         .covary[IO]
@@ -83,7 +99,14 @@ object Wikipedia2App extends IOApp.Simple {
               .parallelism(n = 50)
               .read(Path(sourceFilePath))
               .parEvalMap(20) { rec =>
-                IO.println(processRecord(rec)) //simple print result
+//                IO.println(processRecordBySNLP(rec)) //simple print result
+                IO.blocking { // Write into file
+                  val wikiCoreDoc = processRecordBySNLP(rec)
+                  val p: os.Path = savePath(wikiCoreDoc.id)
+                  os.write.append(p, s"${wikiCoreDoc.id}\n")
+                  os.write.append(p, s"${wikiCoreDoc.title}\n")
+                  os.write.append(p, s"${wikiCoreDoc.core.toString}\n")
+                }
               }.compile.drain
         }
     }
