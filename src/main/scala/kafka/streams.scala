@@ -1,15 +1,10 @@
 package kafka
 
 import cats.effect.kernel.Deferred
-import cats.effect.{IO, IOApp, Ref}
-import com.comcast.ip4s.{ipv4, port}
+import cats.effect.{IO, Ref}
 import fs2.Chunk
 import fs2.kafka.*
 import models.kafkaModels.KafkaStats
-import org.http4s.HttpRoutes
-import org.http4s.ember.server.EmberServerBuilder
-import org.http4s.server.Router
-import routes.KafkaStreamServiceControl
 
 import scala.concurrent.duration.DurationInt
 
@@ -39,12 +34,6 @@ object streams {
         .evalMap(producer.produce)
         .groupWithin(100, 3.seconds)
         .evalMap(_.sequence)
-      //x => {
-//          x.sequence.map(x => {
-//            stats.update(x => x.copy(recordsProcessed = x.recordsProcessed + 1))
-//            x
-//          })
-//        })
     }
 
   private def processRecord(record: ConsumerRecord[String, String],

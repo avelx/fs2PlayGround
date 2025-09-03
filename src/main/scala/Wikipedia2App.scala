@@ -21,9 +21,9 @@ object Wikipedia2App extends IOApp.Simple {
   val appConfig = WikiConfig.load
 
   private def savePath(name: String): os.Path = if (appConfig.isProd) {
-    os.root / "home" / "pavel" / "data" / "wikipidia" / s"wiki_${name}.txt"
+    os.root / "home" / "pavel" / "data" / "wikipidia-res" / s"wiki_${name}.txt"
   } else {
-    os.root / "Users" / "pavel" / "devcore" / "Cats-Effects" / "fs2PlayGround" / "data" / "wiki" / s"${name}.txt"
+    os.root / "Users" / "pavel" / "devcore" / "Cats-Effects" / "fs2PlayGround" / "data" / "wiki-res" / s"${name}.txt"
   }
 
   private val dataSourcePath: os.Path = if (appConfig.isProd) {
@@ -103,9 +103,13 @@ object Wikipedia2App extends IOApp.Simple {
                 IO.blocking { // Write into file
                   val wikiCoreDoc = processRecordBySNLP(rec)
                   val p: os.Path = savePath(wikiCoreDoc.id)
-                  os.write.append(p, s"${wikiCoreDoc.id}\n")
-                  os.write.append(p, s"${wikiCoreDoc.title}\n")
-                  os.write.append(p, s"${wikiCoreDoc.core.toString}\n")
+                  os.write.append(p, s"ID-${wikiCoreDoc.id}\n")
+                  os.write.append(p, s"T-${wikiCoreDoc.title}\n")
+                  os.write.append(p, s"A-${wikiCoreDoc.core.annotation()}\n")
+                  os.write.append(p, s"EM-${wikiCoreDoc.core.entityMentions()}\n")
+                  os.write.append(p, s"Q-${wikiCoreDoc.core.quotes()}\n")
+                  os.write.append(p, s"TK-${wikiCoreDoc.core.tokens()}\n")
+                  os.write.append(p, s"SS-${wikiCoreDoc.core.sentences()}\n")
                 }
               }.compile.drain
         }
