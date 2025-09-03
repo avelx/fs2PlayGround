@@ -12,6 +12,7 @@ import org.typelevel.log4cats.slf4j.Slf4jLogger
 import java.util.Properties
 import edu.stanford.nlp.*
 import edu.stanford.nlp.pipeline.{CoreDocument, StanfordCoreNLP}
+import utils.CategoryExtractor
 
 
 object Wikipedia2App extends IOApp.Simple {
@@ -102,14 +103,15 @@ object Wikipedia2App extends IOApp.Simple {
 //                IO.println(processRecordBySNLP(rec)) //simple print result
                 IO.blocking { // Write into file
                   val wikiCoreDoc = processRecordBySNLP(rec)
+                  val categories = CategoryExtractor.extract(wikiCoreDoc.core.sentences().toString)
                   val p: os.Path = savePath(wikiCoreDoc.id)
-                  os.write.append(p, s"ID-${wikiCoreDoc.id}\n")
-                  os.write.append(p, s"T-${wikiCoreDoc.title}\n")
-                  os.write.append(p, s"A-${wikiCoreDoc.core.annotation()}\n")
-                  os.write.append(p, s"EM-${wikiCoreDoc.core.entityMentions()}\n")
-                  os.write.append(p, s"Q-${wikiCoreDoc.core.quotes()}\n")
-                  os.write.append(p, s"TK-${wikiCoreDoc.core.tokens()}\n")
-                  os.write.append(p, s"SS-${wikiCoreDoc.core.sentences()}\n")
+//                  os.write.append(p, s"ID-${wikiCoreDoc.id}\n")
+//                  os.write.append(p, s"T-${wikiCoreDoc.title}\n")
+//                  os.write.append(p, s"A-${wikiCoreDoc.core.annotation()}\n")
+//                  os.write.append(p, s"EM-${wikiCoreDoc.core.entityMentions()}\n")
+//                  os.write.append(p, s"Q-${wikiCoreDoc.core.quotes()}\n")
+//                  os.write.append(p, s"TK-${wikiCoreDoc.core.tokens()}\n")
+                  os.write.append(p, s"${categories.mkString("\n")}\n")
                 }
               }.compile.drain
         }
