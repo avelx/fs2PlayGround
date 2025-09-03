@@ -13,7 +13,8 @@ import java.util.Properties
 import edu.stanford.nlp.*
 import edu.stanford.nlp.pipeline.{CoreDocument, StanfordCoreNLP}
 import utils.CategoryExtractor
-
+import CategoryExtractor.extract
+import domain.kafkaModels.WikiRecordToSubmit
 
 object Wikipedia2App extends IOApp.Simple {
 
@@ -51,6 +52,7 @@ object Wikipedia2App extends IOApp.Simple {
   case class WikiRecordStats(id: String, title: String, frequency: Map[String, Int])
   case class WikiCoreDoc(id: String, title: String, core: CoreDocument)
 
+
   val conf: Configuration = Configuration()
 
   override def run: IO[Unit] = {
@@ -70,7 +72,8 @@ object Wikipedia2App extends IOApp.Simple {
           } else {
             acc + (word -> 1)
           }
-        }.toList.sortWith((p1, p2) => p1._2 > p2._2) // sort by most occurring word
+        }.toList
+        .sortWith((p1, p2) => p1._2 > p2._2) // sort by most occurring word
         .filter(p => p._2 > 3) // actual relevance expect to be often found in the text
         .take(100).toMap
       WikiRecordStats(rec.id, rec.title, frequency)
@@ -100,19 +103,18 @@ object Wikipedia2App extends IOApp.Simple {
               .parallelism(n = 50)
               .read(Path(sourceFilePath))
               .parEvalMap(20) { rec =>
+                    IO.blocking{
+                      val wikiCoreDoc = processRecordBySNLP(rec)
+                      val categories = extract(wikiCoreDoc.core.sentences().toString)
+                      println(WikiRecordToSubmit(rec.id, categories))
+                    }
 //                IO.println(processRecordBySNLP(rec)) //simple print result
-                IO.blocking { // Write into file
-                  val wikiCoreDoc = processRecordBySNLP(rec)
-                  val categories = CategoryExtractor.extract(wikiCoreDoc.core.sentences().toString)
-                  val p: os.Path = savePath(wikiCoreDoc.id)
-//                  os.write.append(p, s"ID-${wikiCoreDoc.id}\n")
-//                  os.write.append(p, s"T-${wikiCoreDoc.title}\n")
-//                  os.write.append(p, s"A-${wikiCoreDoc.core.annotation()}\n")
-//                  os.write.append(p, s"EM-${wikiCoreDoc.core.entityMentions()}\n")
-//                  os.write.append(p, s"Q-${wikiCoreDoc.core.quotes()}\n")
-//                  os.write.append(p, s"TK-${wikiCoreDoc.core.tokens()}\n")
-                  os.write.append(p, s"${categories.mkString("\n")}\n")
-                }
+//                IO.blocking { // Write into file
+//                  val wikiCoreDoc = processRecordBySNLP(rec)
+//                  val categories = CategoryExtractor.extract(wikiCoreDoc.core.sentences().toString)
+//                  val p: os.Path = savePath(wikiCoreDoc.id)
+//                  os.write.append(p, s"${categories.mkString("\n")}\n")
+//                }
               }.compile.drain
         }
     }

@@ -1,7 +1,7 @@
 import cats.effect.{IO, IOApp, Ref}
 import com.comcast.ip4s.{ipv4, port}
+import domain.kafkaModels.KafkaStats
 import kafka.streams.{interruptableConsumerStream, producerStream}
-import models.kafkaModels.KafkaStats
 import org.http4s.HttpRoutes
 import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.server.Router

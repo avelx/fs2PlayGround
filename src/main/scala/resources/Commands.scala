@@ -1,7 +1,7 @@
 package resources
 
 import cats.effect.IO
-import models.StockPrice
+import domain.StockPrice
 import skunk.{Command, Session}
 import skunk.codec.all.{date, float8, varchar}
 import skunk.implicits.sql

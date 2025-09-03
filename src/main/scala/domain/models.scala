@@ -1,4 +1,4 @@
-package models
+package domain
 
 import java.time.{LocalDate, LocalDateTime}
 import scala.util.Try

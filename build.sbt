@@ -43,7 +43,9 @@ libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.5.18"
 
 libraryDependencies += "com.github.fd4s" %% "fs2-kafka" % "3.9.0"
 
+libraryDependencies += "io.circe" %% "circe-core" % "0.14.14"
 libraryDependencies += "io.circe" %% "circe-generic" % "0.14.14"
+libraryDependencies += "io.circe" %% "circe-parser" % "0.14.14"
 
 val http4sVersion = "0.23.30"
 

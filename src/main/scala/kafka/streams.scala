@@ -2,9 +2,10 @@ package kafka
 
 import cats.effect.kernel.Deferred
 import cats.effect.{IO, Ref}
+import domain.kafkaModels.{KafkaStats, WikiRecordToSubmit}
 import fs2.Chunk
+
 import fs2.kafka.*
-import models.kafkaModels.KafkaStats
 
 import scala.concurrent.duration.DurationInt
 
@@ -35,6 +36,22 @@ object streams {
         .groupWithin(100, 3.seconds)
         .evalMap(_.sequence)
     }
+
+  def producerStream2(r: WikiRecordToSubmit) = {
+    KafkaProducer
+    .stream(producerSettings)
+    .flatMap { producer =>
+      fs2.Stream.emits(1 to 10000).covary[IO].map { i =>
+          ProducerRecords.one(
+            ProducerRecord("topic", s"key-$i", s"value-$i")
+          )
+        }
+        .evalMap(producer.produce)
+        .groupWithin(100, 3.seconds)
+        .evalMap(_.sequence)
+    }
+  }
+
 
   private def processRecord(record: ConsumerRecord[String, String],
                             stats: Ref[IO, KafkaStats]): IO[Unit] = {

@@ -2,7 +2,7 @@ import cats.effect.*
 import cats.effect.kernel.Sync
 import config.{AppConfig, PostgreSQLConfig}
 import fs2.io.file.{Files, Path}
-import models.toRecord
+import domain.toRecord
 import org.typelevel.log4cats.Logger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 import resources.AppResources

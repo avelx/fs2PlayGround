@@ -1,8 +1,8 @@
 package routes
 
 import cats.effect.*
+import domain.kafkaModels.KafkaStats
 import io.circe.Encoder
-import models.kafkaModels.KafkaStats
 import org.http4s.*
 import org.http4s.circe.CirceEntityEncoder.circeEntityEncoder
 import org.http4s.dsl.Http4sDsl
