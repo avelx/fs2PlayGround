@@ -16,3 +16,6 @@ TODO::[KAFKA]
     ** at the moment Status contains defects 
 
     * Produce metrics / => Grafana
+
+
+TODO: WebApp / Elm programming => https://guide.elm-lang.org/

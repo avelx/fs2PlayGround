@@ -40,10 +40,14 @@ object TextProcessor {
 
     println("Quotes")
     coreDoc.quotes().forEach(q => {
-      println(s"SPK: ${q.speaker()}")
+//      println(s"SPK: ${q.speaker()}")
     })
 
-    println(s"CRC: ${coreDoc.corefChains()}")
+    println("CoreRefs")
+    //println(s"CRC: ${coreDoc.corefChains()}")
+    coreDoc.corefChains().forEach( (k, v) =>
+      println(s"CHAIN: ${v} \n")
+    )
 
   }
 }
