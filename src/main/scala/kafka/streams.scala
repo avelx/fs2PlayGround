@@ -11,7 +11,6 @@ import scala.concurrent.duration.DurationInt
 
 object streams {
 
-
   
   private val producerSettings = ProducerSettings[IO, String, String]
     .withBootstrapServers("localhost:9092")

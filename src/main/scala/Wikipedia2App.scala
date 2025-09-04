@@ -12,8 +12,8 @@ import org.typelevel.log4cats.slf4j.Slf4jLogger
 import java.util.Properties
 import edu.stanford.nlp.*
 import edu.stanford.nlp.pipeline.{CoreDocument, StanfordCoreNLP}
-import utils.CategoryExtractor
-import CategoryExtractor.extract
+import utils.TextUtils
+import TextUtils.extractCategories
 import domain.kafkaModels.WikiRecordToSubmit
 
 object Wikipedia2App extends IOApp.Simple {
@@ -104,7 +104,11 @@ object Wikipedia2App extends IOApp.Simple {
               .read(Path(sourceFilePath))
               .parEvalMap(20)(rec => IO.blocking {
                 val wikiCoreDoc = processRecordBySNLP(rec)
-                val categories = extract(wikiCoreDoc.core.sentences().toString)
+                val categories = extractCategories(wikiCoreDoc.core.sentences().toString)
+                val p: os.Path = savePath(wikiCoreDoc.id)
+                os.write.append(p, s"ID:${rec.id}\n")
+                os.write.append(p, s"TITLE:${rec.title}\n")
+                os.write.append(p, s"TEXT:${rec.text}\n")
                 WikiRecordToSubmit(rec.id, categories)
               })
               .parEvalMap(20)(recToSubmit => {
