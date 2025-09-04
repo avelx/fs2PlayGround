@@ -13,7 +13,7 @@ import java.util.Properties
 import edu.stanford.nlp.*
 import edu.stanford.nlp.pipeline.{CoreDocument, StanfordCoreNLP}
 import utils.TextUtils
-import TextUtils.extractCategories
+import TextUtils.{extractCategories, stringFormatter}
 import domain.kafkaModels.WikiRecordToSubmit
 
 object Wikipedia2App extends IOApp.Simple {
@@ -108,7 +108,7 @@ object Wikipedia2App extends IOApp.Simple {
                 val p: os.Path = savePath(wikiCoreDoc.id)
                 os.write.append(p, s"ID:${rec.id}\n")
                 os.write.append(p, s"TITLE:${rec.title}\n")
-                os.write.append(p, s"TEXT:${rec.text}\n")
+                os.write.append(p, s"TEXT:${stringFormatter(rec.text)}\n")
                 WikiRecordToSubmit(rec.id, categories)
               })
               .parEvalMap(20)(recToSubmit => {
