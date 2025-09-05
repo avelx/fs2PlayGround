@@ -1,135 +1,164 @@
-module Main exposing (..)
-
+module Main exposing (main)
 
 import Browser
-import Html exposing (..)
-import Html.Attributes exposing (style)
-import Html.Events exposing (..)
-import Http
-import Json.Decode exposing (Decoder, map4, field, int, string)
-
-
-
--- MAIN
-
-
-main =
-  Browser.element
-    { init = init
-    , update = update
-    , subscriptions = subscriptions
-    , view = view
-    }
-
+import Html exposing (Html, div, input, li, text, ul)
+import Html.Attributes exposing (placeholder, style, value)
+import Html.Events exposing (onClick, onInput)
 
 
 -- MODEL
 
-
-type Model
-  = Failure
-  | Loading
-  | Success Quote
-
-
-type alias Quote =
-  { quote : String
-  , source : String
-  , author : String
-  , year : Int
-  }
+type alias Model =
+    { query : String
+    , result : String
+    , suggestions : List String
+    }
 
 
-init : () -> (Model, Cmd Msg)
-init _ =
-  (Loading, getRandomQuote)
+initialModel : Model
+initialModel =
+    { query = ""
+    , result = ""
+    , suggestions = [] }
 
+
+-- DATA
+
+data : List ( String, String )
+data =
+    [ ( "apple", "A sweet fruit" )
+    , ( "banana", "A yellow fruit" )
+    , ( "orange", "A citrus fruit" )
+    , ( "apricot", "A small orange fruit" )
+    , ( "avocado", "A creamy green fruit" )
+    ]
 
 
 -- UPDATE
 
-
 type Msg
-  = MorePlease
-  | GotQuote (Result Http.Error Quote)
+    = UpdateQuery String
+    | SelectSuggestion String
 
 
-update : Msg -> Model -> (Model, Cmd Msg)
+update : Msg -> Model -> Model
 update msg model =
-  case msg of
-    MorePlease ->
-      (Loading, getRandomQuote)
+    case msg of
+        UpdateQuery newQuery ->
+            let
+                lowerQuery = String.toLower newQuery
 
-    GotQuote result ->
-      case result of
-        Ok quote ->
-          (Success quote, Cmd.none)
+                filtered =
+                    if newQuery == "" then
+                        []
+                    else
+                        List.filter (\( key, _ ) -> String.contains lowerQuery (String.toLower key)) data
+                            |> List.map Tuple.first
 
-        Err _ ->
-          (Failure, Cmd.none)
+                found =
+                    List.filter (\( key, _ ) -> String.toLower key == lowerQuery) data
+                        |> List.head
 
+                newResult =
+                    case found of
+                        Just ( _, description ) ->
+                            description
 
+                        Nothing ->
+                            if newQuery == "" then
+                                ""
+                            else
+                                ""
+            in
+            { model
+                | query = newQuery
+                , result = newResult
+                , suggestions = filtered
+            }
 
--- SUBSCRIPTIONS
+        SelectSuggestion suggestion ->
+            let
+                found =
+                    List.filter (\( key, _ ) -> String.toLower key == String.toLower suggestion) data
+                        |> List.head
 
+                newResult =
+                    case found of
+                        Just ( _, description ) ->
+                            description
 
-subscriptions : Model -> Sub Msg
-subscriptions model =
-  Sub.none
-
+                        Nothing ->
+                            "Not found"
+            in
+            { model | query = suggestion, result = newResult, suggestions = [] }
 
 
 -- VIEW
 
-
 view : Model -> Html Msg
 view model =
-  div []
-    [ h2 [] [ text "Random Quotes" ]
-    , viewQuote model
-    ]
-
-
-viewQuote : Model -> Html Msg
-viewQuote model =
-  case model of
-    Failure ->
-      div []
-        [ text "I could not load a random quote for some reason. "
-        , button [ onClick MorePlease ] [ text "Try Again!" ]
+    div
+        [ style "display" "flex"
+        , style "flex-direction" "column"
+        , style "justify-content" "center"
+        , style "align-items" "center"
+        , style "height" "100vh"
+        , style "font-family" "sans-serif"
+        , style "background" "#f8f8f8"
         ]
-
-    Loading ->
-      text "Loading..."
-
-    Success quote ->
-      div []
-        [ button [ onClick MorePlease, style "display" "block" ] [ text "More Please!" ]
-        , blockquote [] [ text quote.quote ]
-        , p [ style "text-align" "right" ]
-            [ text "— "
-            , cite [] [ text quote.source ]
-            , text (" by " ++ quote.author ++ " (" ++ String.fromInt quote.year ++ ")")
+        [ div
+            [ style "position" "relative"
+            , style "width" "300px"
             ]
+            [ input
+                [ placeholder "Type a fruit..."
+                , value model.query
+                , onInput UpdateQuery
+                , style "width" "100%"
+                , style "padding" "10px"
+                , style "font-size" "16px"
+                , style "border" "1px solid #ccc"
+                , style "border-radius" "6px"
+                ]
+                []
+            , if List.isEmpty model.suggestions then
+                text ""
+              else
+                ul
+                    [ style "list-style" "none"
+                    , style "padding" "0"
+                    , style "margin" "0"
+                    , style "border" "1px solid #ccc"
+                    , style "border-top" "none"
+                    , style "background" "white"
+                    , style "position" "absolute"
+                    , style "width" "100%"
+                    , style "max-height" "150px"
+                    , style "overflow-y" "auto"
+                    , style "z-index" "10"
+                    ]
+                    (List.map
+                        (\s ->
+                            li
+                                [ onClick (SelectSuggestion s)
+                                , style "padding" "8px"
+                                , style "cursor" "pointer"
+                                , style "border-bottom" "1px solid #eee"
+                                ]
+                                [ text s ]
+                        )
+                        model.suggestions
+                    )
+            ]
+        , div
+            [ style "margin-top" "15px"
+            , style "font-size" "18px"
+            ]
+            [ text (if model.result /= "" then "Result: " ++ model.result else "") ]
         ]
 
 
+-- MAIN
 
--- HTTP
-
-
-getRandomQuote : Cmd Msg
-getRandomQuote =
-  Http.get
-    { url = "https://elm-lang.org/api/random-quotes"
-    , expect = Http.expectJson GotQuote quoteDecoder
-    }
-
-
-quoteDecoder : Decoder Quote
-quoteDecoder =
-  map4 Quote
-    (field "quote" string)
-    (field "source" string)
-    (field "author" string)
-    (field "year" int)
+main =
+    Browser.sandbox { init = initialModel, update = update, view = view }
