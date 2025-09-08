@@ -5,73 +5,114 @@ import Html exposing (Attribute, Html, button, div, input, text)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onInput)
 import Html.Events exposing (onClick)
+import Http
 
-
-
--- MAIN
-
-
-main =
-  Browser.sandbox { init = init, update = update, view = view }
-
-
+-- Subscriptions
+subscriptions : Model -> Sub Msg
+subscriptions model =
+                Sub.none
 
 -- MODEL
 
+type alias InputFields =
+    { contentOne : String
+    , contentTwo : String
+    }
 
-type alias Model =
-  { content : String,
-    contentSecond : String
-  }
+--type ContentLoad
+--    = Load
+--    | Success
+--    | Failure
+
+type alias Model
+    = {
+            input : InputFields
+      }
 
 
-init : Model
-init =
-  { content = ""
-   , contentSecond = ""}
+init : () -> (Model, Cmd Msg)
+init _ =
+    (
+        {
+                input =
+                    { contentOne = ""
+                    , contentTwo = ""
+                    }
+        }
+        ,
+        Cmd.none
+        --Http.get
+        --  { url = "https://elm-lang.org/assets/public-opinion.txt"
+        --  , expect = Http.expectString GetBooks
+        --  }
 
+    )
 
 
 -- UPDATE
 type Msg
   =     ChangeOne String
     |   ChangeTwo String
-    |   BtnResetClick
+    |   GetBooks  (Result Http.Error String)
+    |   BtnLoad
+    --|   BtnLoadContent
 
 
-update : Msg -> Model -> Model
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
   case msg of
-    ChangeOne newContent ->
-      { model | content = newContent }
-    ChangeTwo newContent ->
-      { model | contentSecond = newContent }
-    BtnResetClick ->
-          { model | contentSecond = "", content = "" }
+      ChangeOne newText ->
+        ( {model | input = { contentOne = newText, contentTwo = model.input.contentTwo } }, Cmd.none)
+      ChangeTwo newText ->
+        ( {model | input = { contentOne = model.input.contentOne, contentTwo = newText } }, Cmd.none)
+
+      GetBooks result ->
+           case result of
+                  Ok fullText ->
+                    --Debug.log "Value:"
+                    ( {model | input = { contentOne = fullText, contentTwo = model.input.contentTwo } }, Cmd.none)
+                  Err _ ->
+                    ( {model | input = { contentOne = "Failure", contentTwo = model.input.contentTwo } }, Cmd.none)
+
+      BtnLoad ->
+          ( {model | input = { contentOne = "Loading", contentTwo = model.input.contentTwo } },
+           Http.get
+                     { url = "https://elm-lang.org/assets/public-opinion.txt"
+                     , expect = Http.expectString GetBooks
+                     })
+
 
 -- VIEW
 
 view : Model -> Html Msg
 view model =
-  div
-    [ style "display" "flex"
-          , style "flex-direction" "column"
-          , style "justify-content" "center"
-          , style "align-items" "center"
-          , style "height" "100vh"
-          , style "font-family" "sans-serif"
-          , style "background" "#f8f8f8"
-     ]
-    [
-        input [ placeholder "Text to reverse", value model.content, onInput ChangeOne ] []
-        , div [] [ text  (model.content ++  " " ++ model.contentSecond ) ]
-        , div []
-        [
-            input [ placeholder "Text to reverse2", value model.contentSecond, onInput ChangeTwo ] []
-        ],
-        button [onClick BtnResetClick ] [ text "Reset" ]
+              div
+                [ style "display" "flex"
+                      , style "flex-direction" "column"
+                      , style "justify-content" "center"
+                      , style "align-items" "center"
+                      , style "height" "100vh"
+                      , style "font-family" "sans-serif"
+                      , style "background" "#f8f8f8"
+                 ]
+                [
+                    input [ placeholder "Text to reverse", value model.input.contentOne, onInput ChangeOne ] []
+                    , div [] [ text  (model.input.contentOne ++  " " ++ model.input.contentTwo ) ]
+                    , div []
+                    [
+                        input [ placeholder "Text to reverse2", value model.input.contentTwo, onInput ChangeTwo ] []
+                    ]
+                    , button [onClick BtnLoad ] [ text "Reset" ]
+                    --,   button [onClick BtnLoadContent ] [ text "AsyncLoad" ]
+                ]
 
-    ]
 
+-- MAIN
 
+main =
+  Browser.element
+    { init = init,
+    update = update,
+    subscriptions = subscriptions,
+    view = view }
 
