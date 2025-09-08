@@ -6,6 +6,7 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (onInput)
 import Html.Events exposing (onClick)
 import Http
+import Json.Decode exposing (Decoder, field, map, map2, string)
 
 -- Subscriptions
 subscriptions : Model -> Sub Msg
@@ -19,15 +20,15 @@ type alias InputFields =
     , contentTwo : String
     }
 
---type ContentLoad
---    = Load
---    | Success
---    | Failure
-
 type alias Model
     = {
             input : InputFields
       }
+
+type alias Fruit =
+  {   name : String
+    , description: String
+  }
 
 
 init : () -> (Model, Cmd Msg)
@@ -41,11 +42,6 @@ init _ =
         }
         ,
         Cmd.none
-        --Http.get
-        --  { url = "https://elm-lang.org/assets/public-opinion.txt"
-        --  , expect = Http.expectString GetBooks
-        --  }
-
     )
 
 
@@ -53,10 +49,15 @@ init _ =
 type Msg
   =     ChangeOne String
     |   ChangeTwo String
-    |   GetBooks  (Result Http.Error String)
+    |   GetFruit  (Result Http.Error Fruit)
     |   BtnLoad
     --|   BtnLoadContent
 
+fruitDecoder : Decoder Fruit
+fruitDecoder =
+  map2 Fruit
+    (field "name" string)
+    (field "description" string)
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
@@ -66,20 +67,21 @@ update msg model =
       ChangeTwo newText ->
         ( {model | input = { contentOne = model.input.contentOne, contentTwo = newText } }, Cmd.none)
 
-      GetBooks result ->
+      GetFruit result ->
            case result of
-                  Ok fullText ->
-                    --Debug.log "Value:"
-                    ( {model | input = { contentOne = fullText, contentTwo = model.input.contentTwo } }, Cmd.none)
+                  Ok fruit ->
+
+                    ( {model | input = { contentOne = fruit.name ++ " " ++ fruit.description, contentTwo = model.input.contentTwo } }, Cmd.none)
                   Err _ ->
                     ( {model | input = { contentOne = "Failure", contentTwo = model.input.contentTwo } }, Cmd.none)
 
       BtnLoad ->
           ( {model | input = { contentOne = "Loading", contentTwo = model.input.contentTwo } },
            Http.get
-                     { url = "https://elm-lang.org/assets/public-opinion.txt"
-                     , expect = Http.expectString GetBooks
+                     { url = "http://localhost:8080/api/topItem"
+                     , expect = Http.expectJson GetFruit fruitDecoder
                      })
+
 
 
 -- VIEW

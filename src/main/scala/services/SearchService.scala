@@ -16,5 +16,9 @@ case class SearchService()  extends Http4sDsl[IO] {
     case GET -> Root / "search" :? NameQueryParamMatcher(q)  =>
       val fs = Fruit.default(q)
       Ok(fs)
+
+    case GET -> Root / "topItem"  =>
+      val fs = Fruit.default("")
+      Ok(fs.head)
   }
 }
