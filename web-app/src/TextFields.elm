@@ -3,7 +3,7 @@ module TextFields exposing (..)
 import Browser
 import Html exposing (Attribute, Html, button, div, input, p, text)
 import Html.Attributes exposing (..)
-import Html.Events exposing (onInput)
+import Html.Events exposing (onCheck, onInput)
 import Html.Events exposing (onClick)
 import Http
 import Json.Decode exposing (Decoder, field, map, map2, string, list)
@@ -24,6 +24,7 @@ type alias Model
     = {
             input : InputFields
             ,fruits: (List Fruit)
+            ,selected: (List String)
       }
 
 type alias Fruit =
@@ -40,7 +41,8 @@ init _ =
                     { contentOne = ""
                     , contentTwo = ""
                     },
-                fruits = []
+                fruits = [],
+                selected = []
         }
         ,
         Cmd.none
@@ -57,6 +59,7 @@ type Msg
     |   BtnGetFruits
     |   Success Fruit
     |   Failure Http.Error
+    |   AddToBasket String Bool
 
 
 fruitDecoder : Decoder Fruit
@@ -100,7 +103,10 @@ update msg model =
                      })
 
       Success fruit ->
-          ( {model | input = { contentOne = fruit.name ++ " " ++ fruit.description, contentTwo = model.input.contentTwo } }, Cmd.none)
+          ( {model | input = {
+                contentOne = fruit.name ++ " " ++ fruit.description, contentTwo = model.input.contentTwo },
+                fruits = []  },
+                Cmd.none)
 
       Failure _ ->
             ( {model | input = { contentOne = "Failure", contentTwo = model.input.contentTwo } }, Cmd.none )
@@ -112,25 +118,62 @@ update msg model =
                                , expect = Http.expectJson GetFruits fruitsDecoder
                                })
 
+      AddToBasket fruitName checked ->
+          if checked then
+            ( {model | selected = (model.selected ++ [fruitName]) }, Cmd.none )
+         else
+            ( {model | selected = (List.filter (\x -> x /= fruitName) model.selected ) }, Cmd.none )
+
+
+
 
 -- VIEW
 viewFruit: Model -> Html Msg
 viewFruit model =
      div [] [ text  (model.input.contentOne ++  " " ++ model.input.contentTwo ) ]
 
+viewSelectedFruits: Model -> Html Msg
+viewSelectedFruits model =
+     div []
+            <|
+                 List.map (
+                    \fruitName ->
+                    (
+                        div [] [ text  fruitName ]
+                    )
+     ) (model.selected)
 
-viewFruits : Model -> Html msg
+-- First ever converter
+fruitsToString: (List Fruit) -> (List String)
+fruitsToString fruits =
+    List.map (\f -> f.name ) fruits
+
+
+viewFruits : Model -> Html Msg
 viewFruits  model =
         div
             [ class "error-messages"
-            , style "position" "fixed"
-            , style "top" "0"
             , style "background" "rgb(250, 250, 250)"
             , style "padding" "20px"
-            , style "border" "1px solid"
             ]
         <|
-            List.map (\f -> p [] [ text f.name ]) model.fruits
+            List.indexedMap (
+                \index-> \fruitName ->
+                    (
+                        div [] [
+                            div []
+                            [ input
+                                        [
+                                           name  ("fruitId" ++ String.fromInt(index))
+                                          , type_ "checkbox"
+                                          , onCheck (AddToBasket fruitName)
+                                        ]
+                                        []
+                                    , text ( fruitName)
+                                    ]
+                        ]
+                    )
+            ) (fruitsToString model.fruits)
 
 
 view : Model -> Html Msg
@@ -148,6 +191,7 @@ view model =
                     input [ placeholder "Text to reverse", value model.input.contentOne, onInput ChangeOne ] []
                     , viewFruit model
                     , viewFruits model
+                    , viewSelectedFruits model
                     , div []
                     [
                         input [ placeholder "Text to reverse2", value model.input.contentTwo, onInput ChangeTwo ] []

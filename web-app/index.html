@@ -5354,7 +5354,8 @@ var $author$project$TextFields$init = function (_v0) {
 	return _Utils_Tuple2(
 		{
 			fruits: _List_Nil,
-			input: {contentOne: '', contentTwo: ''}
+			input: {contentOne: '', contentTwo: ''},
+			selected: _List_Nil
 		},
 		$elm$core$Platform$Cmd$none);
 };
@@ -5989,6 +5990,17 @@ var $elm$http$Http$expectJson = F2(
 						A2($elm$json$Json$Decode$decodeString, decoder, string));
 				}));
 	});
+var $elm$core$List$filter = F2(
+	function (isGood, list) {
+		return A3(
+			$elm$core$List$foldr,
+			F2(
+				function (x, xs) {
+					return isGood(x) ? A2($elm$core$List$cons, x, xs) : xs;
+				}),
+			_List_Nil,
+			list);
+	});
 var $author$project$TextFields$Fruit = F2(
 	function (name, description) {
 		return {description: description, name: name};
@@ -6175,6 +6187,7 @@ var $elm$http$Http$get = function (r) {
 	return $elm$http$Http$request(
 		{body: $elm$http$Http$emptyBody, expect: r.expect, headers: _List_Nil, method: 'GET', timeout: $elm$core$Maybe$Nothing, tracker: $elm$core$Maybe$Nothing, url: r.url});
 };
+var $elm$core$Basics$neq = _Utils_notEqual;
 var $author$project$TextFields$update = F2(
 	function (msg, model) {
 		update:
@@ -6245,6 +6258,7 @@ var $author$project$TextFields$update = F2(
 						_Utils_update(
 							model,
 							{
+								fruits: _List_Nil,
 								input: {contentOne: fruit.name + (' ' + fruit.description), contentTwo: model.input.contentTwo}
 							}),
 						$elm$core$Platform$Cmd$none);
@@ -6256,7 +6270,7 @@ var $author$project$TextFields$update = F2(
 								input: {contentOne: 'Failure', contentTwo: model.input.contentTwo}
 							}),
 						$elm$core$Platform$Cmd$none);
-				default:
+				case 'BtnGetFruits':
 					return _Utils_Tuple2(
 						_Utils_update(
 							model,
@@ -6268,6 +6282,30 @@ var $author$project$TextFields$update = F2(
 								expect: A2($elm$http$Http$expectJson, $author$project$TextFields$GetFruits, $author$project$TextFields$fruitsDecoder),
 								url: 'http://localhost:8080/api/search?query=a'
 							}));
+				default:
+					var fruitName = msg.a;
+					var checked = msg.b;
+					return checked ? _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								selected: _Utils_ap(
+									model.selected,
+									_List_fromArray(
+										[fruitName]))
+							}),
+						$elm$core$Platform$Cmd$none) : _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								selected: A2(
+									$elm$core$List$filter,
+									function (x) {
+										return !_Utils_eq(x, fruitName);
+									},
+									model.selected)
+							}),
+						$elm$core$Platform$Cmd$none);
 			}
 		}
 	});
@@ -6353,32 +6391,90 @@ var $author$project$TextFields$viewFruit = function (model) {
 				$elm$html$Html$text(model.input.contentOne + (' ' + model.input.contentTwo))
 			]));
 };
+var $author$project$TextFields$AddToBasket = F2(
+	function (a, b) {
+		return {$: 'AddToBasket', a: a, b: b};
+	});
 var $elm$html$Html$Attributes$class = $elm$html$Html$Attributes$stringProperty('className');
-var $elm$html$Html$p = _VirtualDom_node('p');
+var $author$project$TextFields$fruitsToString = function (fruits) {
+	return A2(
+		$elm$core$List$map,
+		function (f) {
+			return f.name;
+		},
+		fruits);
+};
+var $elm$html$Html$Attributes$name = $elm$html$Html$Attributes$stringProperty('name');
+var $elm$json$Json$Decode$bool = _Json_decodeBool;
+var $elm$html$Html$Events$targetChecked = A2(
+	$elm$json$Json$Decode$at,
+	_List_fromArray(
+		['target', 'checked']),
+	$elm$json$Json$Decode$bool);
+var $elm$html$Html$Events$onCheck = function (tagger) {
+	return A2(
+		$elm$html$Html$Events$on,
+		'change',
+		A2($elm$json$Json$Decode$map, tagger, $elm$html$Html$Events$targetChecked));
+};
+var $elm$html$Html$Attributes$type_ = $elm$html$Html$Attributes$stringProperty('type');
 var $author$project$TextFields$viewFruits = function (model) {
 	return A2(
 		$elm$html$Html$div,
 		_List_fromArray(
 			[
 				$elm$html$Html$Attributes$class('error-messages'),
-				A2($elm$html$Html$Attributes$style, 'position', 'fixed'),
-				A2($elm$html$Html$Attributes$style, 'top', '0'),
 				A2($elm$html$Html$Attributes$style, 'background', 'rgb(250, 250, 250)'),
-				A2($elm$html$Html$Attributes$style, 'padding', '20px'),
-				A2($elm$html$Html$Attributes$style, 'border', '1px solid')
+				A2($elm$html$Html$Attributes$style, 'padding', '20px')
 			]),
 		A2(
+			$elm$core$List$indexedMap,
+			function (index) {
+				return function (fruitName) {
+					return A2(
+						$elm$html$Html$div,
+						_List_Nil,
+						_List_fromArray(
+							[
+								A2(
+								$elm$html$Html$div,
+								_List_Nil,
+								_List_fromArray(
+									[
+										A2(
+										$elm$html$Html$input,
+										_List_fromArray(
+											[
+												$elm$html$Html$Attributes$name(
+												'fruitId' + $elm$core$String$fromInt(index)),
+												$elm$html$Html$Attributes$type_('checkbox'),
+												$elm$html$Html$Events$onCheck(
+												$author$project$TextFields$AddToBasket(fruitName))
+											]),
+										_List_Nil),
+										$elm$html$Html$text(fruitName)
+									]))
+							]));
+				};
+			},
+			$author$project$TextFields$fruitsToString(model.fruits)));
+};
+var $author$project$TextFields$viewSelectedFruits = function (model) {
+	return A2(
+		$elm$html$Html$div,
+		_List_Nil,
+		A2(
 			$elm$core$List$map,
-			function (f) {
+			function (fruitName) {
 				return A2(
-					$elm$html$Html$p,
+					$elm$html$Html$div,
 					_List_Nil,
 					_List_fromArray(
 						[
-							$elm$html$Html$text(f.name)
+							$elm$html$Html$text(fruitName)
 						]));
 			},
-			model.fruits));
+			model.selected));
 };
 var $author$project$TextFields$view = function (model) {
 	return A2(
@@ -6406,6 +6502,7 @@ var $author$project$TextFields$view = function (model) {
 				_List_Nil),
 				$author$project$TextFields$viewFruit(model),
 				$author$project$TextFields$viewFruits(model),
+				$author$project$TextFields$viewSelectedFruits(model),
 				A2(
 				$elm$html$Html$div,
 				_List_Nil,
