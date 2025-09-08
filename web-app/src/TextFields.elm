@@ -1,12 +1,12 @@
 module TextFields exposing (..)
 
 import Browser
-import Html exposing (Attribute, Html, button, div, input, text)
+import Html exposing (Attribute, Html, button, div, input, p, text)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onInput)
 import Html.Events exposing (onClick)
 import Http
-import Json.Decode exposing (Decoder, field, map, map2, string)
+import Json.Decode exposing (Decoder, field, map, map2, string, list)
 
 -- Subscriptions
 subscriptions : Model -> Sub Msg
@@ -23,6 +23,7 @@ type alias InputFields =
 type alias Model
     = {
             input : InputFields
+            ,fruits: (List Fruit)
       }
 
 type alias Fruit =
@@ -38,7 +39,8 @@ init _ =
                 input =
                     { contentOne = ""
                     , contentTwo = ""
-                    }
+                    },
+                fruits = []
         }
         ,
         Cmd.none
@@ -50,10 +52,11 @@ type Msg
   =     ChangeOne String
     |   ChangeTwo String
     |   GetFruit  (Result Http.Error Fruit)
+    |   GetFruits  (Result Http.Error (List Fruit))
     |   BtnLoad
+    |   BtnGetFruits
     |   Success Fruit
     |   Failure Http.Error
-    --|   BtnLoadContent
 
 
 fruitDecoder : Decoder Fruit
@@ -62,6 +65,9 @@ fruitDecoder =
     (field "name" string)
     (field "description" string)
 
+fruitsDecoder : Decoder (List Fruit)
+fruitsDecoder =
+    Json.Decode.list fruitDecoder
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
@@ -78,6 +84,14 @@ update msg model =
                   Err err ->
                     update (Failure err) model
 
+      GetFruits result ->
+                 case result of
+                        Ok fs ->
+                             ( {model | fruits = fs }, Cmd.none)
+                        Err _ ->
+                          (model, Cmd.none)
+
+
       BtnLoad ->
           ( {model | input = { contentOne = "Loading", contentTwo = model.input.contentTwo } },
            Http.get
@@ -91,11 +105,33 @@ update msg model =
       Failure _ ->
             ( {model | input = { contentOne = "Failure", contentTwo = model.input.contentTwo } }, Cmd.none )
 
+      BtnGetFruits ->
+                 ( {model | input = { contentOne = "Loading", contentTwo = model.input.contentTwo } },
+                     Http.get
+                               { url = "http://localhost:8080/api/search?query=a"
+                               , expect = Http.expectJson GetFruits fruitsDecoder
+                               })
+
 
 -- VIEW
 viewFruit: Model -> Html Msg
 viewFruit model =
      div [] [ text  (model.input.contentOne ++  " " ++ model.input.contentTwo ) ]
+
+
+viewFruits : Model -> Html msg
+viewFruits  model =
+        div
+            [ class "error-messages"
+            , style "position" "fixed"
+            , style "top" "0"
+            , style "background" "rgb(250, 250, 250)"
+            , style "padding" "20px"
+            , style "border" "1px solid"
+            ]
+        <|
+            List.map (\f -> p [] [ text f.name ]) model.fruits
+
 
 view : Model -> Html Msg
 view model =
@@ -111,13 +147,16 @@ view model =
                 [
                     input [ placeholder "Text to reverse", value model.input.contentOne, onInput ChangeOne ] []
                     , viewFruit model
+                    , viewFruits model
                     , div []
                     [
                         input [ placeholder "Text to reverse2", value model.input.contentTwo, onInput ChangeTwo ] []
                     ]
                     , button [onClick BtnLoad ] [ text "Reset" ]
-                    --,   button [onClick BtnLoadContent ] [ text "AsyncLoad" ]
+                    , button [onClick BtnGetFruits ] [ text "AsyncLoad" ]
+
                 ]
+
 
 
 -- MAIN

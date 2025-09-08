@@ -5353,6 +5353,7 @@ var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
 var $author$project$TextFields$init = function (_v0) {
 	return _Utils_Tuple2(
 		{
+			fruits: _List_Nil,
 			input: {contentOne: '', contentTwo: ''}
 		},
 		$elm$core$Platform$Cmd$none);
@@ -5367,6 +5368,9 @@ var $author$project$TextFields$Failure = function (a) {
 };
 var $author$project$TextFields$GetFruit = function (a) {
 	return {$: 'GetFruit', a: a};
+};
+var $author$project$TextFields$GetFruits = function (a) {
+	return {$: 'GetFruits', a: a};
 };
 var $author$project$TextFields$Success = function (a) {
 	return {$: 'Success', a: a};
@@ -5996,6 +6000,8 @@ var $author$project$TextFields$fruitDecoder = A3(
 	$author$project$TextFields$Fruit,
 	A2($elm$json$Json$Decode$field, 'name', $elm$json$Json$Decode$string),
 	A2($elm$json$Json$Decode$field, 'description', $elm$json$Json$Decode$string));
+var $elm$json$Json$Decode$list = _Json_decodeList;
+var $author$project$TextFields$fruitsDecoder = $elm$json$Json$Decode$list($author$project$TextFields$fruitDecoder);
 var $elm$http$Http$emptyBody = _Http_emptyBody;
 var $elm$http$Http$Request = function (a) {
 	return {$: 'Request', a: a};
@@ -6209,6 +6215,18 @@ var $author$project$TextFields$update = F2(
 						model = $temp$model;
 						continue update;
 					}
+				case 'GetFruits':
+					var result = msg.a;
+					if (result.$ === 'Ok') {
+						var fs = result.a;
+						return _Utils_Tuple2(
+							_Utils_update(
+								model,
+								{fruits: fs}),
+							$elm$core$Platform$Cmd$none);
+					} else {
+						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+					}
 				case 'BtnLoad':
 					return _Utils_Tuple2(
 						_Utils_update(
@@ -6230,7 +6248,7 @@ var $author$project$TextFields$update = F2(
 								input: {contentOne: fruit.name + (' ' + fruit.description), contentTwo: model.input.contentTwo}
 							}),
 						$elm$core$Platform$Cmd$none);
-				default:
+				case 'Failure':
 					return _Utils_Tuple2(
 						_Utils_update(
 							model,
@@ -6238,9 +6256,22 @@ var $author$project$TextFields$update = F2(
 								input: {contentOne: 'Failure', contentTwo: model.input.contentTwo}
 							}),
 						$elm$core$Platform$Cmd$none);
+				default:
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								input: {contentOne: 'Loading', contentTwo: model.input.contentTwo}
+							}),
+						$elm$http$Http$get(
+							{
+								expect: A2($elm$http$Http$expectJson, $author$project$TextFields$GetFruits, $author$project$TextFields$fruitsDecoder),
+								url: 'http://localhost:8080/api/search?query=a'
+							}));
 			}
 		}
 	});
+var $author$project$TextFields$BtnGetFruits = {$: 'BtnGetFruits'};
 var $author$project$TextFields$BtnLoad = {$: 'BtnLoad'};
 var $author$project$TextFields$ChangeOne = function (a) {
 	return {$: 'ChangeOne', a: a};
@@ -6322,6 +6353,33 @@ var $author$project$TextFields$viewFruit = function (model) {
 				$elm$html$Html$text(model.input.contentOne + (' ' + model.input.contentTwo))
 			]));
 };
+var $elm$html$Html$Attributes$class = $elm$html$Html$Attributes$stringProperty('className');
+var $elm$html$Html$p = _VirtualDom_node('p');
+var $author$project$TextFields$viewFruits = function (model) {
+	return A2(
+		$elm$html$Html$div,
+		_List_fromArray(
+			[
+				$elm$html$Html$Attributes$class('error-messages'),
+				A2($elm$html$Html$Attributes$style, 'position', 'fixed'),
+				A2($elm$html$Html$Attributes$style, 'top', '0'),
+				A2($elm$html$Html$Attributes$style, 'background', 'rgb(250, 250, 250)'),
+				A2($elm$html$Html$Attributes$style, 'padding', '20px'),
+				A2($elm$html$Html$Attributes$style, 'border', '1px solid')
+			]),
+		A2(
+			$elm$core$List$map,
+			function (f) {
+				return A2(
+					$elm$html$Html$p,
+					_List_Nil,
+					_List_fromArray(
+						[
+							$elm$html$Html$text(f.name)
+						]));
+			},
+			model.fruits));
+};
 var $author$project$TextFields$view = function (model) {
 	return A2(
 		$elm$html$Html$div,
@@ -6347,6 +6405,7 @@ var $author$project$TextFields$view = function (model) {
 					]),
 				_List_Nil),
 				$author$project$TextFields$viewFruit(model),
+				$author$project$TextFields$viewFruits(model),
 				A2(
 				$elm$html$Html$div,
 				_List_Nil,
@@ -6371,6 +6430,16 @@ var $author$project$TextFields$view = function (model) {
 				_List_fromArray(
 					[
 						$elm$html$Html$text('Reset')
+					])),
+				A2(
+				$elm$html$Html$button,
+				_List_fromArray(
+					[
+						$elm$html$Html$Events$onClick($author$project$TextFields$BtnGetFruits)
+					]),
+				_List_fromArray(
+					[
+						$elm$html$Html$text('AsyncLoad')
 					]))
 			]));
 };
