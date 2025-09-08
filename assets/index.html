@@ -5362,8 +5362,14 @@ var $elm$core$Platform$Sub$none = $elm$core$Platform$Sub$batch(_List_Nil);
 var $author$project$TextFields$subscriptions = function (model) {
 	return $elm$core$Platform$Sub$none;
 };
+var $author$project$TextFields$Failure = function (a) {
+	return {$: 'Failure', a: a};
+};
 var $author$project$TextFields$GetFruit = function (a) {
 	return {$: 'GetFruit', a: a};
+};
+var $author$project$TextFields$Success = function (a) {
+	return {$: 'Success', a: a};
 };
 var $elm$json$Json$Decode$decodeString = _Json_runOnString;
 var $elm$http$Http$BadStatus_ = F2(
@@ -6165,29 +6171,58 @@ var $elm$http$Http$get = function (r) {
 };
 var $author$project$TextFields$update = F2(
 	function (msg, model) {
-		switch (msg.$) {
-			case 'ChangeOne':
-				var newText = msg.a;
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{
-							input: {contentOne: newText, contentTwo: model.input.contentTwo}
-						}),
-					$elm$core$Platform$Cmd$none);
-			case 'ChangeTwo':
-				var newText = msg.a;
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{
-							input: {contentOne: model.input.contentOne, contentTwo: newText}
-						}),
-					$elm$core$Platform$Cmd$none);
-			case 'GetFruit':
-				var result = msg.a;
-				if (result.$ === 'Ok') {
-					var fruit = result.a;
+		update:
+		while (true) {
+			switch (msg.$) {
+				case 'ChangeOne':
+					var newText = msg.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								input: {contentOne: newText, contentTwo: model.input.contentTwo}
+							}),
+						$elm$core$Platform$Cmd$none);
+				case 'ChangeTwo':
+					var newText = msg.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								input: {contentOne: model.input.contentOne, contentTwo: newText}
+							}),
+						$elm$core$Platform$Cmd$none);
+				case 'GetFruit':
+					var result = msg.a;
+					if (result.$ === 'Ok') {
+						var fruit = result.a;
+						var $temp$msg = $author$project$TextFields$Success(fruit),
+							$temp$model = model;
+						msg = $temp$msg;
+						model = $temp$model;
+						continue update;
+					} else {
+						var err = result.a;
+						var $temp$msg = $author$project$TextFields$Failure(err),
+							$temp$model = model;
+						msg = $temp$msg;
+						model = $temp$model;
+						continue update;
+					}
+				case 'BtnLoad':
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								input: {contentOne: 'Loading', contentTwo: model.input.contentTwo}
+							}),
+						$elm$http$Http$get(
+							{
+								expect: A2($elm$http$Http$expectJson, $author$project$TextFields$GetFruit, $author$project$TextFields$fruitDecoder),
+								url: 'http://localhost:8080/api/topItem'
+							}));
+				case 'Success':
+					var fruit = msg.a;
 					return _Utils_Tuple2(
 						_Utils_update(
 							model,
@@ -6195,7 +6230,7 @@ var $author$project$TextFields$update = F2(
 								input: {contentOne: fruit.name + (' ' + fruit.description), contentTwo: model.input.contentTwo}
 							}),
 						$elm$core$Platform$Cmd$none);
-				} else {
+				default:
 					return _Utils_Tuple2(
 						_Utils_update(
 							model,
@@ -6203,19 +6238,7 @@ var $author$project$TextFields$update = F2(
 								input: {contentOne: 'Failure', contentTwo: model.input.contentTwo}
 							}),
 						$elm$core$Platform$Cmd$none);
-				}
-			default:
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{
-							input: {contentOne: 'Loading', contentTwo: model.input.contentTwo}
-						}),
-					$elm$http$Http$get(
-						{
-							expect: A2($elm$http$Http$expectJson, $author$project$TextFields$GetFruit, $author$project$TextFields$fruitDecoder),
-							url: 'http://localhost:8080/api/topItem'
-						}));
+			}
 		}
 	});
 var $author$project$TextFields$BtnLoad = {$: 'BtnLoad'};
@@ -6290,6 +6313,15 @@ var $elm$html$Html$Attributes$style = $elm$virtual_dom$VirtualDom$style;
 var $elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
 var $elm$html$Html$text = $elm$virtual_dom$VirtualDom$text;
 var $elm$html$Html$Attributes$value = $elm$html$Html$Attributes$stringProperty('value');
+var $author$project$TextFields$viewFruit = function (model) {
+	return A2(
+		$elm$html$Html$div,
+		_List_Nil,
+		_List_fromArray(
+			[
+				$elm$html$Html$text(model.input.contentOne + (' ' + model.input.contentTwo))
+			]));
+};
 var $author$project$TextFields$view = function (model) {
 	return A2(
 		$elm$html$Html$div,
@@ -6314,13 +6346,7 @@ var $author$project$TextFields$view = function (model) {
 						$elm$html$Html$Events$onInput($author$project$TextFields$ChangeOne)
 					]),
 				_List_Nil),
-				A2(
-				$elm$html$Html$div,
-				_List_Nil,
-				_List_fromArray(
-					[
-						$elm$html$Html$text(model.input.contentOne + (' ' + model.input.contentTwo))
-					])),
+				$author$project$TextFields$viewFruit(model),
 				A2(
 				$elm$html$Html$div,
 				_List_Nil,

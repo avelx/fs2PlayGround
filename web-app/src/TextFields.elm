@@ -51,13 +51,17 @@ type Msg
     |   ChangeTwo String
     |   GetFruit  (Result Http.Error Fruit)
     |   BtnLoad
+    |   Success Fruit
+    |   Failure Http.Error
     --|   BtnLoadContent
+
 
 fruitDecoder : Decoder Fruit
 fruitDecoder =
   map2 Fruit
     (field "name" string)
     (field "description" string)
+
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
@@ -70,10 +74,9 @@ update msg model =
       GetFruit result ->
            case result of
                   Ok fruit ->
-
-                    ( {model | input = { contentOne = fruit.name ++ " " ++ fruit.description, contentTwo = model.input.contentTwo } }, Cmd.none)
-                  Err _ ->
-                    ( {model | input = { contentOne = "Failure", contentTwo = model.input.contentTwo } }, Cmd.none)
+                    update (Success fruit) model
+                  Err err ->
+                    update (Failure err) model
 
       BtnLoad ->
           ( {model | input = { contentOne = "Loading", contentTwo = model.input.contentTwo } },
@@ -82,9 +85,17 @@ update msg model =
                      , expect = Http.expectJson GetFruit fruitDecoder
                      })
 
+      Success fruit ->
+          ( {model | input = { contentOne = fruit.name ++ " " ++ fruit.description, contentTwo = model.input.contentTwo } }, Cmd.none)
+
+      Failure _ ->
+            ( {model | input = { contentOne = "Failure", contentTwo = model.input.contentTwo } }, Cmd.none )
 
 
 -- VIEW
+viewFruit: Model -> Html Msg
+viewFruit model =
+     div [] [ text  (model.input.contentOne ++  " " ++ model.input.contentTwo ) ]
 
 view : Model -> Html Msg
 view model =
@@ -99,7 +110,7 @@ view model =
                  ]
                 [
                     input [ placeholder "Text to reverse", value model.input.contentOne, onInput ChangeOne ] []
-                    , div [] [ text  (model.input.contentOne ++  " " ++ model.input.contentTwo ) ]
+                    , viewFruit model
                     , div []
                     [
                         input [ placeholder "Text to reverse2", value model.input.contentTwo, onInput ChangeTwo ] []
