@@ -26,8 +26,6 @@ main =
 
 
 -- MODEL
-
-
 type alias Suggestion =
     { id : Int
     , name : String
