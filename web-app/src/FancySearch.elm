@@ -197,7 +197,8 @@ update msg model =
 -- [{ "id": 123, "name": "hello" }, { "id": 321, "name": "world" }]
 apiUrl : String
 apiUrl =
-    "http://localhost:8080/api/suggest?q="
+    --"http://localhost:8080/api/suggest?q="
+    "http://192.168.1.19:8080/api/suggest?q="
 
 
 fetchSuggestions : Int -> String -> Cmd Msg
@@ -230,8 +231,18 @@ suggestionsDecoder =
 
 view : Model -> Html Msg
 view model =
-    div [ style "font-family" "system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica", style "max-width" "420px" ]
-        [ div [ style "position" "relative" ]
+    div
+        [ style "display" "flex"
+        , style "justify-content" "center"
+        , style "align-items" "center"
+        , style "height" "100vh"
+        , style "background" "#f9f9f9"
+        , style "font-family" "system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica"
+        ]
+        [ div
+            [ style "position" "relative"
+            , style "width" "420px"
+            ]
             [ input
                 [ placeholder "Search..."
                 , value model.query
@@ -244,6 +255,7 @@ view model =
                 , style "box-sizing" "border-box"
                 , style "border-radius" "6px"
                 , style "border" "1px solid #ccc"
+                , style "font-size" "16px"
                 ]
                 []
             , viewSpinner model.loading
@@ -281,14 +293,18 @@ viewSuggestions model =
         list ->
             ul
                 [ style "list-style" "none"
-                , style "margin" "6px 0 0 0"
+                , style "margin" "0"
                 , style "padding" "6px"
                 , style "box-shadow" "0 6px 18px rgba(0,0,0,0.08)"
                 , style "border-radius" "6px"
                 , style "background" "white"
                 , style "max-height" "260px"
                 , style "overflow" "auto"
-                , attribute "role" "listbox"
+                , style "position" "absolute"
+                , style "top" "48px"      -- positions below input
+                , style "left" "0"
+                , style "width" "100%"
+                , style "z-index" "10"
                 ]
                 (List.indexedMap (renderSuggestion model.highlighted) list)
 

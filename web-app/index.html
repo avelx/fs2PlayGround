@@ -5384,7 +5384,7 @@ var $author$project$FancySearch$GotResults = F2(
 	function (a, b) {
 		return {$: 'GotResults', a: a, b: b};
 	});
-var $author$project$FancySearch$apiUrl = 'http://localhost:8080/api/suggest?q=';
+var $author$project$FancySearch$apiUrl = 'http://192.168.1.19:8080/api/suggest?q=';
 var $elm$json$Json$Decode$decodeString = _Json_runOnString;
 var $elm$http$Http$BadStatus_ = F2(
 	function (a, b) {
@@ -6552,14 +6552,18 @@ var $author$project$FancySearch$viewSuggestions = function (model) {
 			_List_fromArray(
 				[
 					A2($elm$html$Html$Attributes$style, 'list-style', 'none'),
-					A2($elm$html$Html$Attributes$style, 'margin', '6px 0 0 0'),
+					A2($elm$html$Html$Attributes$style, 'margin', '0'),
 					A2($elm$html$Html$Attributes$style, 'padding', '6px'),
 					A2($elm$html$Html$Attributes$style, 'box-shadow', '0 6px 18px rgba(0,0,0,0.08)'),
 					A2($elm$html$Html$Attributes$style, 'border-radius', '6px'),
 					A2($elm$html$Html$Attributes$style, 'background', 'white'),
 					A2($elm$html$Html$Attributes$style, 'max-height', '260px'),
 					A2($elm$html$Html$Attributes$style, 'overflow', 'auto'),
-					A2($elm$html$Html$Attributes$attribute, 'role', 'listbox')
+					A2($elm$html$Html$Attributes$style, 'position', 'absolute'),
+					A2($elm$html$Html$Attributes$style, 'top', '48px'),
+					A2($elm$html$Html$Attributes$style, 'left', '0'),
+					A2($elm$html$Html$Attributes$style, 'width', '100%'),
+					A2($elm$html$Html$Attributes$style, 'z-index', '10')
 				]),
 			A2(
 				$elm$core$List$indexedMap,
@@ -6572,8 +6576,12 @@ var $author$project$FancySearch$view = function (model) {
 		$elm$html$Html$div,
 		_List_fromArray(
 			[
-				A2($elm$html$Html$Attributes$style, 'font-family', 'system-ui, -apple-system, \'Segoe UI\', Roboto, Helvetica'),
-				A2($elm$html$Html$Attributes$style, 'max-width', '420px')
+				A2($elm$html$Html$Attributes$style, 'display', 'flex'),
+				A2($elm$html$Html$Attributes$style, 'justify-content', 'center'),
+				A2($elm$html$Html$Attributes$style, 'align-items', 'center'),
+				A2($elm$html$Html$Attributes$style, 'height', '100vh'),
+				A2($elm$html$Html$Attributes$style, 'background', '#f9f9f9'),
+				A2($elm$html$Html$Attributes$style, 'font-family', 'system-ui, -apple-system, \'Segoe UI\', Roboto, Helvetica')
 			]),
 		_List_fromArray(
 			[
@@ -6581,7 +6589,8 @@ var $author$project$FancySearch$view = function (model) {
 				$elm$html$Html$div,
 				_List_fromArray(
 					[
-						A2($elm$html$Html$Attributes$style, 'position', 'relative')
+						A2($elm$html$Html$Attributes$style, 'position', 'relative'),
+						A2($elm$html$Html$Attributes$style, 'width', '420px')
 					]),
 				_List_fromArray(
 					[
@@ -6602,7 +6611,8 @@ var $author$project$FancySearch$view = function (model) {
 								A2($elm$html$Html$Attributes$style, 'padding', '10px 12px'),
 								A2($elm$html$Html$Attributes$style, 'box-sizing', 'border-box'),
 								A2($elm$html$Html$Attributes$style, 'border-radius', '6px'),
-								A2($elm$html$Html$Attributes$style, 'border', '1px solid #ccc')
+								A2($elm$html$Html$Attributes$style, 'border', '1px solid #ccc'),
+								A2($elm$html$Html$Attributes$style, 'font-size', '16px')
 							]),
 						_List_Nil),
 						$author$project$FancySearch$viewSpinner(model.loading),
