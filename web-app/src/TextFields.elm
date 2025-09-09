@@ -1,17 +1,19 @@
 module TextFields exposing (..)
 
 import Browser
-import Html exposing (Attribute, Html, button, div, input, p, text)
+import Domain.Fruit exposing (Fruit, fruitDecoder, fruitsDecoder, fruitsToString)
+import Html exposing (Attribute, Html, button, div, input, li, text, ul)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onCheck, onInput)
 import Html.Events exposing (onClick)
 import Http
-import Json.Decode exposing (Decoder, field, map, map2, string, list)
+import Task
+import Time exposing (Posix)
 
 -- Subscriptions
 subscriptions : Model -> Sub Msg
-subscriptions model =
-                Sub.none
+subscriptions _ =
+    Time.every 500 (\_ -> FetchSuggestions)
 
 -- MODEL
 
@@ -22,15 +24,13 @@ type alias InputFields =
 
 type alias Model
     = {
-            input : InputFields
-            ,fruits: (List Fruit)
-            ,selected: (List String)
+              input : InputFields
+            , fruits: (List Fruit)
+            , selected: (List String)
+            , query: String
+            , suggestions : List String
+            , debounceTime : Maybe Posix
       }
-
-type alias Fruit =
-  {   name : String
-    , description: String
-  }
 
 
 init : () -> (Model, Cmd Msg)
@@ -43,6 +43,9 @@ init _ =
                     },
                 fruits = [],
                 selected = []
+                , query = ""
+                , suggestions = []
+                ,debounceTime = Nothing
         }
         ,
         Cmd.none
@@ -60,17 +63,23 @@ type Msg
     |   Success Fruit
     |   Failure Http.Error
     |   AddToBasket String Bool
+    |   Debounce Posix
+    |   SelectSuggestion String
+    |   SuggestionsFetched (Result Http.Error (List Fruit))
+    |   UpdateQuery String
+    |   FetchSuggestions
 
 
-fruitDecoder : Decoder Fruit
-fruitDecoder =
-  map2 Fruit
-    (field "name" string)
-    (field "description" string)
+getSuggestions : String -> Cmd Msg
+getSuggestions q =
+           Http.get{
+                 url = "http://localhost:8080/api/search?query=" ++ q
+                ,expect = Http.expectJson SuggestionsFetched fruitsDecoder
+            }
 
-fruitsDecoder : Decoder (List Fruit)
-fruitsDecoder =
-    Json.Decode.list fruitDecoder
+debounceCmd : Cmd Msg
+debounceCmd =
+    Task.perform Debounce Time.now
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
@@ -124,6 +133,28 @@ update msg model =
          else
             ( {model | selected = (List.filter (\x -> x /= fruitName) model.selected ) }, Cmd.none )
 
+      SelectSuggestion suggestion ->
+            ( { model | query = suggestion, suggestions = [] }, Cmd.none )
+
+      UpdateQuery q ->
+           ( { model | query = q }, debounceCmd )
+
+      FetchSuggestions ->
+            if String.length model.query > 1 then
+                ( model, getSuggestions model.query )
+            else
+                ( { model | suggestions = [] }, Cmd.none )
+
+      Debounce now ->
+                  ( { model | debounceTime = Just now }, Cmd.none )
+
+      SuggestionsFetched (Ok suggestions) ->
+            ( { model | suggestions = fruitsToString(suggestions) }, Cmd.none )
+
+      SuggestionsFetched (Err _) ->
+                  ( { model | suggestions = [] }, Cmd.none )
+
+
 
 
 
@@ -142,11 +173,6 @@ viewSelectedFruits model =
                         div [] [ text  fruitName ]
                     )
      ) (model.selected)
-
--- First ever converter
-fruitsToString: (List Fruit) -> (List String)
-fruitsToString fruits =
-    List.map (\f -> f.name ) fruits
 
 
 viewFruits : Model -> Html Msg
@@ -175,6 +201,24 @@ viewFruits  model =
                     )
             ) (fruitsToString model.fruits)
 
+lookUpFruits: Model -> Html Msg
+lookUpFruits model =
+    div [ class "lookup" ]
+        [ input
+            [ type_ "text"
+            , placeholder "Search..."
+            , value model.query
+            , onInput UpdateQuery
+            ]
+            []
+        , if List.isEmpty model.suggestions then
+            text ""
+          else
+            ul []
+                (List.map (\s -> li [ onClick (SelectSuggestion s) ] [ text s ]) model.suggestions)
+        ]
+
+
 
 view : Model -> Html Msg
 view model =
@@ -188,27 +232,24 @@ view model =
                       , style "background" "#f8f8f8"
                  ]
                 [
-                    input [ placeholder "Text to reverse", value model.input.contentOne, onInput ChangeOne ] []
-                    , viewFruit model
-                    , viewFruits model
-                    , viewSelectedFruits model
-                    , div []
-                    [
-                        input [ placeholder "Text to reverse2", value model.input.contentTwo, onInput ChangeTwo ] []
-                    ]
-                    , button [onClick BtnLoad ] [ text "Reset" ]
-                    , button [onClick BtnGetFruits ] [ text "AsyncLoad" ]
+                    --input [ placeholder "Text to reverse", value model.input.contentOne, onInput ChangeOne ] []
+                    --, viewFruit model
+                    --, viewFruits model
+                    --, viewSelectedFruits model
+                    lookUpFruits model
+                    --, div []
+                    --[
+                    --    input [ placeholder "Text to reverse2", value model.input.contentTwo, onInput ChangeTwo ] []
+                    --]
+                    --, button [onClick BtnLoad ] [ text "Reset" ]
+                    --, button [onClick BtnGetFruits ] [ text "AsyncLoad" ]
 
                 ]
 
-
-
 -- MAIN
-
 main =
   Browser.element
     { init = init,
     update = update,
     subscriptions = subscriptions,
     view = view }
-

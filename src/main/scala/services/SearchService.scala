@@ -8,6 +8,8 @@ import Fruit.*
 import org.http4s.dsl.impl.QueryParamDecoderMatcher
 
 object NameQueryParamMatcher extends QueryParamDecoderMatcher[String]("query")
+object SimpleNameQueryParamMatcher extends QueryParamDecoderMatcher[String]("q")
+
 
 case class SearchService()  extends Http4sDsl[IO] {
 
@@ -15,6 +17,10 @@ case class SearchService()  extends Http4sDsl[IO] {
 
     case GET -> Root / "search" :? NameQueryParamMatcher(q)  =>
       val fs = Fruit.default(q)
+      Ok(fs)
+
+    case GET -> Root / "suggest" :? SimpleNameQueryParamMatcher(q)  =>
+      val fs = Fruit.getFruitsId(q)
       Ok(fs)
 
     case GET -> Root / "topItem"  =>
